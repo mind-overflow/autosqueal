@@ -9,7 +9,9 @@ public class SystemUtil
         String osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
         if (osName.contains("win")) {
             return OperatingSystem.WINDOWS;
-        } else if (osName.contains("nix") || osName.contains("nux")) {
+        } else if (osName.contains("nix") ||
+                osName.contains("nux") ||
+                osName.contains("aix")) {
             return OperatingSystem.LINUX;
         } else if (osName.contains("mac")) {
             return OperatingSystem.MAC_OS;

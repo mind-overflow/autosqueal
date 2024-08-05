@@ -45,9 +45,14 @@ public class MainWindow
         imageLabel.setBounds(new Rectangle(bordersPx, bordersPx, rescaleWidth, rescaleHeight));
         frame.add(imageLabel);
 
-        JLabel timestampLabel = new JLabel(new ImageIcon(getPreciseScreenshot()));
+        Image preciseScreenshot = getPreciseScreenshot();
+        JLabel timestampLabel = new JLabel(new ImageIcon(preciseScreenshot));
         timestampLabel.setBounds(new Rectangle(bordersPx, bordersPx + rescaleHeight + bordersPx, 100, 30));
         frame.add(timestampLabel);
+
+        String ocr = doOCR(preciseScreenshot);
+        LOGGER.info("OCR FOUND : {}", ocr);
+
 
         frame.setLayout(null);
         frame.setVisible(true);
@@ -78,6 +83,30 @@ public class MainWindow
         }
 
         return null;
+    }
+
+    public String doOCR(Image image) {
+        // todo BufferedImage bImage = getBufferedImage(image);
+
+        return null;
+    }
+
+    public BufferedImage getBufferedImage(Image img) {
+        if (img instanceof BufferedImage image)
+        {
+            return image;
+        }
+
+        // Create a buffered image with transparency
+        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the image on to the buffered image
+        Graphics2D bGr = bimage.createGraphics();
+        bGr.drawImage(img, 0, 0, null);
+        bGr.dispose();
+
+        // Return the buffered image
+        return bimage;
     }
 
     public void toggleRunning() {
