@@ -6,6 +6,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.Main;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,7 @@ public class KeyPressListener implements NativeKeyListener
 
             LOGGER.warn("Received shutdown keystroke: {}", keys);
 
-            System.exit(0);
+            Main.getMainWindow().toggleRunning();
         }
     }
 }

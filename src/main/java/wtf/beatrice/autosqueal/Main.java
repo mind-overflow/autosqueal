@@ -16,13 +16,13 @@ public class Main {
     private static boolean running = true;
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
+    private static final MainWindow mainWindow = new MainWindow();
 
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
         registerJNativeHook();
 
-        MainWindow mainWindow = new MainWindow();
         mainWindow.init();
     }
 
@@ -39,6 +39,10 @@ public class Main {
 
             System.exit(1);
         }
+    }
+
+    public static MainWindow getMainWindow() {
+        return mainWindow;
     }
 
 }

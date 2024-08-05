@@ -1,5 +1,6 @@
 package wtf.beatrice.autosqueal.ui;
 
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import wtf.beatrice.autosqueal.controls.CursorMover;
@@ -8,7 +9,6 @@ import wtf.beatrice.autosqueal.util.RunnerUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.Timer;
 
@@ -19,22 +19,27 @@ public class MainWindow
     private static final int WINDOW_HEIGHT = 600;
     private static final int WINDOW_WIDTH = 800;
 
-    private final Timer TIMER_RUNNER = new Timer();
-
-    private CursorMover cursorMover = null;
+    private Timer timerRunner = new Timer();
+    private CursorMover cursorMover = new CursorMover();
+    private Button toggleButton;
 
 
     public MainWindow() {
+
     }
 
     public void init() {
+
         JFrame frame = new JFrame();
         frame.setSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+        frame.setTitle("autosqueal");
+        frame.setResizable(false);
 
-        Button toggleButton = new Button("Start");
-        toggleButton.setBounds(new Rectangle((WINDOW_WIDTH / 2) - 40, WINDOW_HEIGHT - 60, 80, 30));
-        toggleButton.addActionListener(e -> toggleRunning(toggleButton));
+        toggleButton = new Button();
+        toggleButton.setBounds(new Rectangle((WINDOW_WIDTH / 2) - 60, WINDOW_HEIGHT - 60, 120, 30));
+        toggleButton.addActionListener(e -> toggleRunning());
         frame.add(toggleButton);
+        toggleRunning();
 
         int bordersPx = 10;
         int rescaleRateo = ((WINDOW_WIDTH - (2 * bordersPx)) * 100) / RunnerUtil.SCREEN_WIDTH;
@@ -61,24 +66,38 @@ public class MainWindow
         }
     }
 
-    private void toggleRunning(Button button) {
+    public void toggleRunning() {
+
+        String label;
 
         if (cursorMover == null) {
+            timerRunner = new Timer();
             CursorMoveListener cursorMoveListener = new CursorMoveListener();
-            TIMER_RUNNER.schedule(cursorMoveListener, 0L, 1000L);
+            timerRunner.schedule(cursorMoveListener, 0L, 1000L);
 
             cursorMover = new CursorMover();
-            TIMER_RUNNER.schedule(cursorMover, 1000L, RunnerUtil.SECONDS_BETWEEN_MOVES * 1000L);
+            timerRunner.schedule(cursorMover, 1000L, RunnerUtil.SECONDS_BETWEEN_MOVES * 1000L);
 
-            button.setLabel("Stop");
+            label = "Stop [" +
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) +
+                    "][" +
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) +
+                    "]";
         }
         else {
-            TIMER_RUNNER.cancel();
+            timerRunner.cancel();
 
             cursorMover = null;
 
-            button.setLabel("Start");
+            label = "Start [" +
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) +
+                    "][" +
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) +
+                    "]";
+
         }
+
+        toggleButton.setLabel(label);
 
     }
 }
