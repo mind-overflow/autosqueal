@@ -16,7 +16,6 @@ public class Main {
         LOGGER.info("Hello world!");
 
         registerJNativeHook();
-
         mainWindow.init();
     }
 
