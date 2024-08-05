@@ -5,8 +5,33 @@ platform:
   arch: arm64
 
 steps:
+  # test if it compiles correctly
   - name: build
     image: maven:3-eclipse-temurin-17
     commands:
-      - mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
-      - mvn test -B
+      - mvn verify --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+
+  # run unit tests
+  - name: test
+    image: maven:3-eclipse-temurin-17
+    commands:
+      - mvn test --no-transfer-progress -B -V
+
+  # check maven dependencies
+  - name: dependency-check
+    image: maven:3-eclipse-temurin-17
+    commands:
+      - mvn dependency-check:check --no-transfer-progress -B -V
+      -
+  # run code analysis
+  - name: code-analysis
+    image: maven:3-eclipse-temurin-17
+    commands:
+      - mvn sonar:sonar --no-transfer-progress -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.host.url=$SONAR_INSTANCE_URL -Dsonar.login=$SONAR_LOGIN_KEY -B -V
+    environment:
+      SONAR_PROJECT_KEY:
+        from_secret: sonar_project_key
+      SONAR_INSTANCE_URL:
+        from_secret: sonar_instance_url
+      SONAR_LOGIN_KEY:
+        from_secret: sonar_login_key
