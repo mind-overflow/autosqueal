@@ -4,12 +4,8 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import wtf.beatrice.autosqueal.util.RunnerUtil;
 import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
-
-import java.awt.*;
-import java.util.Timer;
 
 public class Main {
 
