@@ -24,7 +24,7 @@ public class SingleStepMovementTask extends TimerTask {
     boolean click;
 
 
-    public SingleStepMovementTask(int destinationX, int destinationY, boolean click) {
+    public SingleStepMovementTask(int destinationX, int destinationY, boolean click) throws AWTException {
 
         this.click = click;
 
@@ -52,11 +52,7 @@ public class SingleStepMovementTask extends TimerTask {
         LOGGER.info("Len: [{}, {}]", lengthX, lengthY);
         LOGGER.info("Step: [{}, {}]", stepX, stepY);
 
-        try {
-            robot = new Robot();
-        } catch (AWTException e) {
-            LOGGER.error(e);
-        }
+        robot = new Robot();
 
     }
 
