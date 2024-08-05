@@ -23,7 +23,7 @@ public class KeyPressListener implements NativeKeyListener
             try {
                 GlobalScreen.unregisterNativeHook();
             } catch (NativeHookException nativeHookException) {
-                nativeHookException.printStackTrace();
+                LOGGER.error("Failed to unregister native hook", nativeHookException);
             }
         }
 
