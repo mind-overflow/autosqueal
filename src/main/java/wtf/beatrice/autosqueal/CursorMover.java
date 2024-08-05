@@ -10,11 +10,15 @@ public class CursorMover extends TimerTask {
 
     private static final Logger LOGGER = LogManager.getLogger(CursorMover.class);
 
-    final int destX, destY;
+    final int destX;
+    final int destY;
     final Robot robot;
 
-    float currentX, currentY;
-    float stepX = 1, stepY = 1;
+    float currentX;
+    float currentY;
+
+    float stepX = 1;
+    float stepY = 1;
     boolean isRunning = true;
 
 
@@ -26,7 +30,8 @@ public class CursorMover extends TimerTask {
         destX = destinationX;
         destY = destinationY;
 
-        int lengthX, lengthY;
+        int lengthX;
+        int lengthY;
 
         lengthX = Math.round(Math.abs(currentX - destX));
         lengthY = Math.round(Math.abs(currentY - destY));

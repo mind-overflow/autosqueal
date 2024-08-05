@@ -41,7 +41,8 @@ public class Main {
 
                 LOGGER.info("Starting coordinates: {}, {}", currentX, currentY);
 
-                int randomX, randomY;
+                int randomX;
+                int randomY;
 
                 randomX = random.nextInt(width);
                 randomY = random.nextInt(height);
@@ -90,6 +91,6 @@ public class Main {
 
         timer.cancel();
 
-        Thread.sleep(TIME_BETWEEN_MOVES * 1000);
+        Thread.sleep(TIME_BETWEEN_MOVES * 1000L);
     }
 }

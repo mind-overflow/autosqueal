@@ -8,8 +8,12 @@ import java.util.TimerTask;
 
 public class CursorMoveListener extends TimerTask {
 
-    private int oldX, oldY;
-    private int newX, newY;
+    private int oldX;
+    private int oldY;
+
+    private int newX;
+    private int newY;
+
     private int loops;
     private boolean isUserAway;
 

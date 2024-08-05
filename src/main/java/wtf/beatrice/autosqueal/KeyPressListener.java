@@ -13,8 +13,9 @@ import java.util.List;
 public class KeyPressListener implements NativeKeyListener
 {
     private static final Logger LOGGER = LogManager.getLogger(KeyPressListener.class);
-    private final static List<Integer> pressedKeysIds = new ArrayList<>();
+    private static final List<Integer> pressedKeysIds = new ArrayList<>();
 
+    @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
         LOGGER.info("Key Pressed: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
@@ -31,6 +32,7 @@ public class KeyPressListener implements NativeKeyListener
         handlePressedKeys();
     }
 
+    @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
         LOGGER.info("Key Released: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
@@ -44,9 +46,7 @@ public class KeyPressListener implements NativeKeyListener
         pressedKeysIds.contains(NativeKeyEvent.VC_CONTROL)) {
 
             StringBuilder keys = new StringBuilder();
-            pressedKeysIds.forEach(keyCode -> {
-                keys.append("[").append(NativeKeyEvent.getKeyText(keyCode)).append("]");
-            });
+            pressedKeysIds.forEach(keyCode -> keys.append("[").append(NativeKeyEvent.getKeyText(keyCode)).append("]"));
 
             LOGGER.warn("Received shutdown keystroke: {}", keys);
 
