@@ -23,11 +23,6 @@ public class MainWindow
     private CursorMover cursorMover = new CursorMover();
     private Button toggleButton;
 
-
-    public MainWindow() {
-
-    }
-
     public void init() {
 
         JFrame frame = new JFrame();

@@ -11,9 +11,6 @@ public class CursorMoveListener extends TimerTask {
     private int oldX;
     private int oldY;
 
-    private int newX;
-    private int newY;
-
     private int loops;
     private boolean isUserAway;
 
@@ -28,8 +25,8 @@ public class CursorMoveListener extends TimerTask {
 
     @Override
     public void run() {
-        newX = MouseInfo.getPointerInfo().getLocation().x;
-        newY = MouseInfo.getPointerInfo().getLocation().y;
+        int newX = MouseInfo.getPointerInfo().getLocation().x;
+        int newY = MouseInfo.getPointerInfo().getLocation().y;
 
         if(newX != oldX || newY != oldY) {
             // cursor has been moved

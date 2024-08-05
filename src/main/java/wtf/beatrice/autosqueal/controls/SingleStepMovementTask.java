@@ -55,7 +55,7 @@ public class SingleStepMovementTask extends TimerTask {
         try {
             robot = new Robot();
         } catch (AWTException e) {
-            throw new RuntimeException(e);
+            LOGGER.error(e);
         }
 
     }

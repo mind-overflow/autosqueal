@@ -9,8 +9,6 @@ import wtf.beatrice.autosqueal.ui.MainWindow;
 
 public class Main {
 
-    private static boolean running = true;
-
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final MainWindow mainWindow = new MainWindow();
 
