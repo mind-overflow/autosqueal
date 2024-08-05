@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.Timer;
 
@@ -31,7 +32,7 @@ public class Main {
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
 
-        Random random = new Random();
+        Random random = new SecureRandom();
 
         while (running) {
             //if(!cursorMoveListener.isUserAway()) continue;
