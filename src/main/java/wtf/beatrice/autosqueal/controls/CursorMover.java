@@ -41,14 +41,24 @@ public class CursorMover extends TimerTask
             destX = RunnerUtil.SCREEN_WIDTH - 5;
             destY = 5;
 
-            singleStepMovementTask = new SingleStepMovementTask(destX, destY, true);
+            try {
+                singleStepMovementTask = new SingleStepMovementTask(destX, destY, true);
+            } catch (AWTException e) {
+                LOGGER.error(e);
+                return;
+            }
 
             iteration = 0;
         } else {
             destX = random.nextInt(RunnerUtil.SCREEN_WIDTH);
             destY = random.nextInt(RunnerUtil.SCREEN_HEIGHT);
 
-            singleStepMovementTask = new SingleStepMovementTask(destX, destY, false);
+            try {
+                singleStepMovementTask = new SingleStepMovementTask(destX, destY, false);
+            } catch (AWTException e) {
+                LOGGER.error(e);
+                return;
+            }
 
             iteration++;
         }
