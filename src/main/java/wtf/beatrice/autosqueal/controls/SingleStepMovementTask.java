@@ -85,7 +85,7 @@ public class SingleStepMovementTask extends TimerTask {
                     Thread.sleep(200);
                 } catch (InterruptedException e) {
                     LOGGER.error(e);
-                    return;
+                    Thread.currentThread().interrupt();
                 }
             }
 
