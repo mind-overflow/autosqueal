@@ -1,4 +1,4 @@
-package wtf.beatrice.autosqueal;
+package wtf.beatrice.autosqueal.listener;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;

@@ -1,4 +1,4 @@
-package wtf.beatrice.autosqueal;
+package wtf.beatrice.autosqueal.controls;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 import java.awt.*;
 import java.util.TimerTask;
 
-public class CursorMover extends TimerTask {
+public class SingleStepMovementTask extends TimerTask {
 
-    private static final Logger LOGGER = LogManager.getLogger(CursorMover.class);
+    private static final Logger LOGGER = LogManager.getLogger(SingleStepMovementTask.class);
 
     final int destX;
     final int destY;
@@ -22,7 +22,7 @@ public class CursorMover extends TimerTask {
     boolean isRunning = true;
 
 
-    public CursorMover(int destinationX, int destinationY) {
+    public SingleStepMovementTask(int destinationX, int destinationY) {
 
         currentX = MouseInfo.getPointerInfo().getLocation().x;
         currentY = MouseInfo.getPointerInfo().getLocation().y;
