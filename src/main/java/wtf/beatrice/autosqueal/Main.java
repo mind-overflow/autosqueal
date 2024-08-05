@@ -15,6 +15,8 @@ public class Main {
     private static final int LOOPS_BEFORE_CLICK = 5;
     private static final int TIME_BETWEEN_MOVES = 5;
 
+    private static boolean running = true;
+
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) throws InterruptedException, AWTException {
@@ -31,7 +33,7 @@ public class Main {
 
         Random random = new Random();
 
-        while (true) {
+        while (running) {
             //if(!cursorMoveListener.isUserAway()) continue;
 
             for(int i = 0; i < LOOPS_BEFORE_CLICK; i++) {
