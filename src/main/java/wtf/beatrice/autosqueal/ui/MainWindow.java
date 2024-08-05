@@ -67,7 +67,7 @@ public class MainWindow
             CursorMoveListener cursorMoveListener = new CursorMoveListener();
             TIMER_RUNNER.schedule(cursorMoveListener, 0L, 1000L);
 
-            cursorMover = new CursorMover(RunnerUtil.SCREEN_WIDTH, RunnerUtil.SCREEN_HEIGHT);
+            cursorMover = new CursorMover();
             TIMER_RUNNER.schedule(cursorMover, 1000L, RunnerUtil.SECONDS_BETWEEN_MOVES * 1000L);
 
             button.setLabel("Stop");

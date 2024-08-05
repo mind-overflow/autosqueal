@@ -2,6 +2,7 @@ package wtf.beatrice.autosqueal.controls;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.util.RunnerUtil;
 
 import java.awt.*;
 import java.security.SecureRandom;
@@ -15,14 +16,12 @@ public class CursorMover extends TimerTask
     private static final Logger LOGGER = LogManager.getLogger(CursorMover.class);
     private final Random RANDOM;
 
-    private final int SCREEN_HEIGHT;
-    private final int SCREEN_WIDTH;
+    private static final int LOOPS_BEFORE_CLICK = 5;
 
-    public CursorMover(int screenWidth, int screenHeight) {
+    private int iteration = 0;
+
+    public CursorMover() {
         RANDOM = new SecureRandom();
-
-        this.SCREEN_WIDTH = screenWidth;
-        this.SCREEN_HEIGHT = screenHeight;
     }
 
     @Override
@@ -33,13 +32,31 @@ public class CursorMover extends TimerTask
 
         LOGGER.info("Starting coordinates: {}, {}", currentX, currentY);
 
-        int destX = RANDOM.nextInt(SCREEN_WIDTH);
-        int destY = RANDOM.nextInt(SCREEN_HEIGHT);
+        int destX;
+        int destY;
+
+        SingleStepMovementTask singleStepMovementTask;
+
+        if (iteration == LOOPS_BEFORE_CLICK) {
+            destX = RunnerUtil.SCREEN_WIDTH - 5;
+            destY = 5;
+
+            singleStepMovementTask = new SingleStepMovementTask(destX, destY, true);
+
+            iteration = 0;
+        } else {
+            destX = RANDOM.nextInt(RunnerUtil.SCREEN_WIDTH);
+            destY = RANDOM.nextInt(RunnerUtil.SCREEN_HEIGHT);
+
+            singleStepMovementTask = new SingleStepMovementTask(destX, destY, false);
+
+            iteration++;
+        }
 
         LOGGER.info("Destination coordinates: {}, {}", destX, destY);
 
         Timer timer = new Timer();
-        SingleStepMovementTask singleStepMovementTask = new SingleStepMovementTask(destX, destY);
         timer.schedule(singleStepMovementTask, 0L, 2L);
+
     }
 }

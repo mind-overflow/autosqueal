@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.util.TimerTask;
 
 public class SingleStepMovementTask extends TimerTask {
@@ -20,9 +21,12 @@ public class SingleStepMovementTask extends TimerTask {
     float stepX = 1;
     float stepY = 1;
     boolean isRunning = true;
+    boolean click;
 
 
-    public SingleStepMovementTask(int destinationX, int destinationY) {
+    public SingleStepMovementTask(int destinationX, int destinationY, boolean click) {
+
+        this.click = click;
 
         currentX = MouseInfo.getPointerInfo().getLocation().x;
         currentY = MouseInfo.getPointerInfo().getLocation().y;
@@ -67,6 +71,24 @@ public class SingleStepMovementTask extends TimerTask {
         }
 
         if(destX == Math.round(currentX) || destY == Math.round(currentY)) {
+
+            if (click) {
+                try {
+                    Thread.sleep(500);
+                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                    Thread.sleep(200);
+                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                    Thread.sleep(500);
+                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                    Thread.sleep(200);
+                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    LOGGER.error(e);
+                    return;
+                }
+            }
+
             LOGGER.info("Reached destination, stopping mover timer");
             LOGGER.info("Dest: [{}, {}], Curr: [{}, {}]", destX, destY, currentX, currentY);
             isRunning = false;

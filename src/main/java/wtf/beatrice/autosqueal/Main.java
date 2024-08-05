@@ -13,8 +13,6 @@ import java.util.Timer;
 
 public class Main {
 
-    private static final int LOOPS_BEFORE_CLICK = 5;
-
     private static boolean running = true;
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
