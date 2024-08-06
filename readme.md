@@ -10,7 +10,7 @@
 *little java tool to automatically perform mouse actions*
 
 ## supported systems
-| system    | supported  |
+| system    | support    |
 |-----------|------------|
 | macOS     | ✅ **full** |
 | Windows   | 🟠 limited |
