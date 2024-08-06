@@ -137,7 +137,6 @@ public class MainWindow
                     "][" +
                     NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) +
                     "]";
-
         }
 
         toggleButton.setLabel(label);

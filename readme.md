@@ -5,3 +5,14 @@
 [![Security Rating](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=security_rating&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
 [![Maintainability Rating](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=sqale_rating&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
 [![Lines of Code](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=ncloc&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
+
+
+*little java tool to automatically perform mouse actions*
+
+## supported systems
+| system    | supported  |
+|-----------|------------|
+| macOS     | ✅ **full** |
+| Windows   | 🟠 limited |
+| GNU/Linux | 🟠 limited |
+
