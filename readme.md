@@ -23,9 +23,10 @@
  - maven  
   
 **build steps**  
-clone the official repository linked below using `git clone`.
-`cd` into the directory and run `mvn clean package`.
-you will find a runnable jar with dependencies in the `target/` folder.
+ 1. clone the official repository linked below using `git clone`.  
+ 2. `cd` into the directory and run `mvn clean package`.  
+ 3. you will find a runnable jar with dependencies in the `target/` folder.  
+ 4. run the built jar file with `java -jar target/autoqeual-*-dependencies.jar`.
   
 ## support  
 | category            | info                                                   |
