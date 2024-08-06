@@ -5,18 +5,29 @@
 [![Security Rating](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=security_rating&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
 [![Maintainability Rating](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=sqale_rating&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
 [![Lines of Code](https://sonar.beatrice.wtf/api/project_badges/measure?project=autosqueal&metric=ncloc&token=sqb_49dde556c032d0130640ea1e48875905b158d368)](https://sonar.beatrice.wtf/dashboard?id=autosqueal)
-
-
-*little java tool to automatically perform mouse actions*
-
-## supported systems
+  
+  
+*little java tool to automatically perform mouse actions*  
+  
+## supported systems  
 | system    | support    |
 |-----------|------------|
 | macOS     | ✅ **full** |
 | Windows   | 🟠 limited |
 | GNU/Linux | 🟠 limited |
   
-## support
+## building  
+**required tools**  
+ - java 17 sdk  
+ - git  
+ - maven  
+  
+**build steps**  
+clone the official repository linked below using `git clone`.
+`cd` into the directory and run `mvn clean package`.
+you will find a runnable jar with dependencies in the `target/` folder.
+  
+## support  
 | category            | info                                                   |
 |---------------------|--------------------------------------------------------|
 | official repository | [gitea src](https://git.beatrice.wtf/Tools/autosqeal)  |
