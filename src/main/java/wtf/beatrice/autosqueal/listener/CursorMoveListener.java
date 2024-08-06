@@ -2,6 +2,8 @@ package wtf.beatrice.autosqueal.listener;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.Main;
+import wtf.beatrice.autosqueal.util.RunnerUtil;
 
 import java.awt.*;
 import java.util.TimerTask;
@@ -25,6 +27,8 @@ public class CursorMoveListener extends TimerTask {
 
     @Override
     public void run() {
+        if(RunnerUtil.isSquealing()) return;
+
         int newX = MouseInfo.getPointerInfo().getLocation().x;
         int newY = MouseInfo.getPointerInfo().getLocation().y;
 
@@ -33,14 +37,15 @@ public class CursorMoveListener extends TimerTask {
             loops = 0;
             LOGGER.info("User is no longer away!");
         } else {
-            if (loops < 30) {
+            if (loops < 10) {
                 loops++;
             } else {
                 LOGGER.info("User is away!");
+                Main.getMainWindow().toggleRunning();
             }
         }
 
-        isUserAway = loops >= 30;
+        isUserAway = loops >= 10;
 
         oldX = newX;
         oldY = newY;

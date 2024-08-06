@@ -50,7 +50,6 @@ public class MainWindow
         timestampLabel.setBounds(new Rectangle(bordersPx, bordersPx + rescaleHeight + bordersPx, 100, 30));
         frame.add(timestampLabel);
 
-
         frame.setLayout(null);
         frame.setVisible(true);
     }
@@ -106,8 +105,6 @@ public class MainWindow
 
         if (cursorMover == null) {
             timerRunner = new Timer();
-            CursorMoveListener cursorMoveListener = new CursorMoveListener();
-            timerRunner.schedule(cursorMoveListener, 0L, 1000L);
 
             cursorMover = new CursorMover();
             timerRunner.schedule(cursorMover, 1000L, RunnerUtil.SECONDS_BETWEEN_MOVES * 1000L);
@@ -132,6 +129,14 @@ public class MainWindow
 
         toggleButton.setLabel(label);
 
+    }
+
+    @Deprecated
+    public boolean isRunning() {
+        if (cursorMover == null)
+            return false;
+
+        return cursorMover.isRunning();
     }
 
 }

@@ -1,5 +1,7 @@
 package wtf.beatrice.autosqueal.util;
 
+import wtf.beatrice.autosqueal.Main;
+
 import java.awt.*;
 
 public class RunnerUtil {
@@ -12,5 +14,9 @@ public class RunnerUtil {
 
     public static final int SCREEN_HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height;
     public static final int SCREEN_WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width;
+
+    public static boolean isSquealing() {
+        return Main.getMainWindow().isRunning();
+    }
 
 }

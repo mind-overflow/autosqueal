@@ -15,6 +15,7 @@ public class CursorMover extends TimerTask
 
     private static final Logger LOGGER = LogManager.getLogger(CursorMover.class);
     private final Random random;
+    private SingleStepMovementTask singleStepMovementTask;
 
     private static final int LOOPS_BEFORE_CLICK = 5;
 
@@ -22,6 +23,7 @@ public class CursorMover extends TimerTask
 
     public CursorMover() {
         random = new SecureRandom();
+        singleStepMovementTask = null;
     }
 
     @Override
@@ -34,8 +36,6 @@ public class CursorMover extends TimerTask
 
         int destX;
         int destY;
-
-        SingleStepMovementTask singleStepMovementTask;
 
         if (iteration == LOOPS_BEFORE_CLICK) {
             destX = RunnerUtil.SCREEN_WIDTH - 5;
@@ -67,6 +67,11 @@ public class CursorMover extends TimerTask
 
         Timer timer = new Timer();
         timer.schedule(singleStepMovementTask, 0L, 2L);
+    }
 
+    public boolean isRunning() {
+        if (singleStepMovementTask == null) return false;
+
+        return singleStepMovementTask.isRunning();
     }
 }

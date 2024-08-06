@@ -4,8 +4,11 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.listener.CursorMoveListener;
 import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
+
+import java.util.Timer;
 
 public class Main {
 
@@ -17,6 +20,10 @@ public class Main {
 
         registerJNativeHook();
         mainWindow.init();
+
+        Timer timerRunner = new Timer();
+        CursorMoveListener cursorMoveListener = new CursorMoveListener();
+        timerRunner.schedule(cursorMoveListener, 0L, 1000L);
     }
 
     private static void registerJNativeHook() {

@@ -20,7 +20,7 @@ public class SingleStepMovementTask extends TimerTask {
 
     float stepX = 1;
     float stepY = 1;
-    boolean isRunning = true;
+    private boolean isRunning = true;
     boolean click;
 
 
