@@ -29,9 +29,10 @@
  4. run the built jar file with `java -jar target/autoqeual-*-dependencies.jar`.
   
 ## support  
-| category            | info                                                      |
-|---------------------|-----------------------------------------------------------|
-| official repository | [gitea src](https://git.beatrice.wtf/Tools/autosqeal.git) |
-| build status        | [drone-ci](https://drone.beatrice.wtf/Tools/autosqeal)    |
-| dev email           | [hello@beatrice.wtf](mailto:hello@beatrice.wtf)           |
+| category            | info                                                          |
+|---------------------|---------------------------------------------------------------|
+| official repository | [gitea src](https://git.beatrice.wtf/Tools/autosqeal.git)     |
+| mirror repository   | [github src](https://github.com/mind-overflow/autosqueal.git) |
+| build status        | [drone-ci](https://drone.beatrice.wtf/Tools/autosqeal)        |
+| dev email           | [hello@beatrice.wtf](mailto:hello@beatrice.wtf)               |
 
