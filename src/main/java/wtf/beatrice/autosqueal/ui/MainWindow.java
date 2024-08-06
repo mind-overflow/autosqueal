@@ -50,9 +50,6 @@ public class MainWindow
         timestampLabel.setBounds(new Rectangle(bordersPx, bordersPx + rescaleHeight + bordersPx, 100, 30));
         frame.add(timestampLabel);
 
-        String ocr = doOCR(preciseScreenshot);
-        LOGGER.info("OCR FOUND : {}", ocr);
-
 
         frame.setLayout(null);
         frame.setVisible(true);
@@ -81,12 +78,6 @@ public class MainWindow
         } catch (AWTException e) {
             LOGGER.error("Robot initialization error", e);
         }
-
-        return null;
-    }
-
-    public String doOCR(Image image) {
-        // todo BufferedImage bImage = getBufferedImage(image);
 
         return null;
     }
