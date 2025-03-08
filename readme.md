@@ -10,11 +10,11 @@
 *little java tool to automatically perform mouse actions*  
   
 ## supported systems  
-| system    | support        |
-|-----------|----------------|
-| macOS     | ✅ **complete** |
-| GNU/Linux | ⏳ planned      |
-| Windows   | ⏳ planned      |
+| system    | support    |
+|-----------|------------|
+| macOS     | ✅ complete |
+| GNU/Linux | ⏳ planned  |
+| Windows   | ⏳ planned  |
   
 ## building  
 **required tools**  
