@@ -18,7 +18,8 @@ public class KeyPressListener implements NativeKeyListener
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        LOGGER.info("Key Pressed: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
+        String key = NativeKeyEvent.getKeyText(e.getKeyCode());
+        LOGGER.info("Key Pressed: {}", key);
 
         if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
             try {
@@ -35,7 +36,8 @@ public class KeyPressListener implements NativeKeyListener
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        LOGGER.info("Key Released: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
+        String key = NativeKeyEvent.getKeyText(e.getKeyCode());
+        LOGGER.info("Key Released: {}", key);
 
         pressedKeysIds.remove((Integer) e.getKeyCode());
 
