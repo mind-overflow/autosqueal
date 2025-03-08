@@ -4,6 +4,11 @@ platform:
   os: linux
   arch: arm64
 
+trigger:
+  event:
+    - push
+    - pull_request
+
 steps:
   # test if it compiles correctly
   - name: build
