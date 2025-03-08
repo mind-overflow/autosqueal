@@ -29,3 +29,13 @@ steps:
         from_secret: sonar_instance_url
       SONAR_LOGIN_KEY:
         from_secret: sonar_login_key
+
+  - name: deploy
+    image: maven:3-eclipse-temurin-21
+    commands:
+      - mvn deploy --no-transfer-progress -B -V
+    environment:
+      MAVEN_DEPLOY_USERNAME:
+        from_secret: maven_deploy_username
+      MAVEN_DEPLOY_PASSWORD:
+        from_secret: maven_deploy_password
