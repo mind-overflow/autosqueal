@@ -1,5 +1,5 @@
 kind: pipeline
-name: default
+name: verify
 platform:
   os: linux
   arch: arm64
@@ -33,7 +33,7 @@ steps:
 ---
 
 kind: pipeline
-name: default
+name: deploy
 type: docker
 platform:
   os: linux
