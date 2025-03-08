@@ -30,12 +30,31 @@ steps:
       SONAR_LOGIN_KEY:
         from_secret: sonar_login_key
 
-  - name: deploy
-    image: maven:3-eclipse-temurin-21
+---
+
+kind: pipeline
+name: default
+type: docker
+platform:
+  os: linux
+  arch: arm64
+
+trigger:
+  event:
+    - promote
+  target:
+    - production
+
+steps:
+  # skip all previous steps because they were already ran in the "build" phase; we don't need to re-analyze the code.
+
+  # upload to maven repository
+  - name: maven-deploy
+    image: maven:3-eclipse-temurin-16
     commands:
-      - mvn deploy --no-transfer-progress -B -V
+      - mvn deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=MAVEN_DEPLOY_USERNAME -Dmaven.repo.password=$MAVEN_DEPLOY_PASSWORD
     environment:
       MAVEN_DEPLOY_USERNAME:
         from_secret: maven_deploy_username
-      MAVEN_DEPLOY_PASSWORD:
+      $MAVEN_DEPLOY_PASSWORD:
         from_secret: maven_deploy_password
