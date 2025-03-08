@@ -55,7 +55,7 @@ steps:
 
   # upload to maven repository
   - name: maven-deploy
-    image: maven:3-eclipse-temurin-16
+    image: maven:3-eclipse-temurin-21
     commands:
       - mvn deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=MAVEN_DEPLOY_USERNAME -Dmaven.repo.password=$MAVEN_DEPLOY_PASSWORD
     environment:
