@@ -57,7 +57,7 @@ steps:
   - name: maven-deploy
     image: maven:3-eclipse-temurin-21
     commands:
-      - mvn deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=MAVEN_REPO_USERNAME -Dmaven.repo.password=$MAVEN_REPO_PASSWORD
+      - mvn deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=$MAVEN_REPO_USERNAME -Dmaven.repo.password=$MAVEN_REPO_PASSWORD
     environment:
       MAVEN_REPO_USERNAME:
         from_secret: maven_repo_username
