@@ -18,7 +18,7 @@
   
 ## building  
 **required tools**  
- - java 17 sdk  
+ - java 21 sdk  
  - git  
  - maven  
   
