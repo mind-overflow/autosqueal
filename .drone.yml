@@ -61,5 +61,5 @@ steps:
     environment:
       MAVEN_REPO_USERNAME:
         from_secret: maven_repo_username
-      $MAVEN_REPO_PASSWORD:
+      MAVEN_REPO_PASSWORD:
         from_secret: maven_repo_password
