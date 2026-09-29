@@ -18,7 +18,7 @@
   
 ## building  
 **required tools**  
- - java 21 sdk  
+ - java 25 sdk  
  - git  
  - maven  
   
@@ -26,7 +26,7 @@
  1. clone the official repository linked below using `git clone`.  
  2. `cd` into the directory and run `mvn clean package`.  
  3. you will find a runnable jar with dependencies in the `target/` folder.  
- 4. run the built jar file with `java -jar target/autosqueal-*-dependencies.jar`.
+ 4. run the built jar file with `java -jar target/autosqueal-*-jar-with-dependencies.jar`.
   
 ## support  
 | category            | info                                                          |
