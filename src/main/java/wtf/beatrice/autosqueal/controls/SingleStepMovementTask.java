@@ -15,6 +15,9 @@ import java.util.concurrent.TimeUnit;
  *
  * When it gets there, it can optionally perform a double click, scheduled as
  * separate one-shot actions so that the scheduler is never blocked.
+ *
+ * All the movements it performs are reported to the {@link RobotMouseTracker},
+ * so that the away detection can tell them apart from the user's.
  */
 public class SingleStepMovementTask implements Runnable {
 
@@ -24,6 +27,7 @@ public class SingleStepMovementTask implements Runnable {
     private static final long STEP_DELAY_MILLISECONDS = 2L;
 
     private final ScheduledExecutorService scheduler;
+    private final RobotMouseTracker robotTracker;
     private final Robot robot;
     private final int destX;
     private final int destY;
@@ -34,9 +38,10 @@ public class SingleStepMovementTask implements Runnable {
     private float stepX;
     private float stepY;
 
-    public SingleStepMovementTask(ScheduledExecutorService scheduler, int destinationX, int destinationY, boolean click) throws AWTException {
+    public SingleStepMovementTask(ScheduledExecutorService scheduler, RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click) throws AWTException {
 
         this.scheduler = scheduler;
+        this.robotTracker = robotTracker;
         this.destX = destinationX;
         this.destY = destinationY;
         this.click = click;
@@ -60,6 +65,20 @@ public class SingleStepMovementTask implements Runnable {
     @Override
     public void run() {
 
+        // any position change from here on is the app's doing
+        robotTracker.moveStarted();
+
+        try {
+            tick();
+        } catch (RuntimeException ex) {
+            // whatever happened, don't leave the tracker stuck on "moving"
+            LOGGER.error("Unexpected error while moving the cursor", ex);
+            robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
+        }
+    }
+
+    private void tick() {
+
         if (hasReachedDestination()) {
             onDestinationReached();
             return;
@@ -81,6 +100,7 @@ public class SingleStepMovementTask implements Runnable {
             // the scheduler was shut down mid-movement: the automation was
             // stopped, so just end the movement chain here
             LOGGER.debug("Movement interrupted: scheduler is shut down");
+            robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
         }
     }
 
@@ -90,6 +110,8 @@ public class SingleStepMovementTask implements Runnable {
 
     private void onDestinationReached() {
         LOGGER.info("Reached destination [{}, {}], stopping mover", destX, destY);
+
+        robotTracker.moveEnded(destX, destY);
 
         if (click) {
             scheduleClickSequence();

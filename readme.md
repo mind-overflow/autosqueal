@@ -8,6 +8,8 @@
   
   
 *little java tool to automatically perform mouse actions*  
+
+*once started, it only acts when you are away: it detects your activity and pauses itself while you are using the machine, so it never fights you for the mouse.*  
   
 ## supported systems  
 | system    | support    |

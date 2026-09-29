@@ -5,6 +5,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import wtf.beatrice.autosqueal.Main;
 import wtf.beatrice.autosqueal.controls.CursorMover;
+import wtf.beatrice.autosqueal.controls.RobotMouseTracker;
+import wtf.beatrice.autosqueal.listener.CursorMoveListener;
 import wtf.beatrice.autosqueal.util.RunnerUtil;
 import wtf.beatrice.autosqueal.util.SystemUtil;
 
@@ -25,6 +27,7 @@ public class MainWindow
     private static final int WINDOW_WIDTH = 800;
 
     private static final long AUTOMATION_START_DELAY_SECONDS = 1L;
+    private static final long AWAY_POLL_INTERVAL_SECONDS = 1L;
 
     private final JFrame frame = new JFrame();
     private Button toggleButton;
@@ -144,12 +147,15 @@ public class MainWindow
             thread.setDaemon(true);
             return thread;
         });
-        cursorMover = new CursorMover(scheduler);
 
-        // note: away-detection (CursorMoveListener) is intentionally not scheduled here.
-        // as it is, it cannot tell the user's movements apart from the movements the app
-        // itself makes, so it would always think the user is present. it will be reworked
-        // and re-enabled in a future iteration.
+        // away-detection: polls the cursor position and ignores the movements
+        // the app performs itself, as reported by the robot mouse tracker.
+        // the automation only moves the mouse when the user is away.
+        RobotMouseTracker robotTracker = new RobotMouseTracker();
+        CursorMoveListener cursorMoveListener = new CursorMoveListener(robotTracker);
+        scheduler.scheduleWithFixedDelay(cursorMoveListener, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+        cursorMover = new CursorMover(scheduler, robotTracker, cursorMoveListener::isUserAway);
         scheduler.scheduleWithFixedDelay(cursorMover,
                 AUTOMATION_START_DELAY_SECONDS,
                 RunnerUtil.SECONDS_BETWEEN_MOVES,
