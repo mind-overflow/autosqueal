@@ -7,7 +7,8 @@ import wtf.beatrice.autosqueal.util.RunnerUtil;
 import java.awt.*;
 import java.security.SecureRandom;
 import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -18,7 +19,7 @@ import java.util.function.BooleanSupplier;
  * using the machine, they are skipped, so the app never fights for the mouse.
  *
  * The movement itself is executed by a {@link SingleStepMovementTask}, which
- * re-schedules itself on the shared scheduler until it reaches its destination.
+ * runs on its own virtual thread until it reaches its destination.
  */
 public class CursorMover implements Runnable
 {
@@ -27,14 +28,14 @@ public class CursorMover implements Runnable
     private static final int LOOPS_BEFORE_CLICK = 5;
 
     private final Random random = new SecureRandom();
-    private final ScheduledExecutorService scheduler;
+    private final ExecutorService movementExecutor;
     private final RobotMouseTracker robotTracker;
     private final BooleanSupplier isUserAway;
 
     private int iteration = 0;
 
-    public CursorMover(ScheduledExecutorService scheduler, RobotMouseTracker robotTracker, BooleanSupplier isUserAway) {
-        this.scheduler = scheduler;
+    public CursorMover(ExecutorService movementExecutor, RobotMouseTracker robotTracker, BooleanSupplier isUserAway) {
+        this.movementExecutor = movementExecutor;
         this.robotTracker = robotTracker;
         this.isUserAway = isUserAway;
     }
@@ -71,10 +72,12 @@ public class CursorMover implements Runnable
         LOGGER.info("Destination coordinates: {}, {}", destX, destY);
 
         try {
-            SingleStepMovementTask movement = new SingleStepMovementTask(scheduler, robotTracker, destX, destY, click);
-            scheduler.execute(movement);
+            SingleStepMovementTask movement = new SingleStepMovementTask(robotTracker, destX, destY, click);
+            movementExecutor.execute(movement);
         } catch (AWTException ex) {
             LOGGER.error("Could not start movement task", ex);
+        } catch (RejectedExecutionException ex) {
+            LOGGER.debug("Movement not started: automation is shutting down");
         }
     }
 }

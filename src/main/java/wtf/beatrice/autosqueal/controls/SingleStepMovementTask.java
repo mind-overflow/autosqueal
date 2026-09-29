@@ -5,16 +5,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Moves the mouse cursor towards a destination one small step at a time,
- * re-scheduling itself on the shared scheduler until the destination is reached.
+ * Moves the mouse cursor towards a destination one small step at a time.
  *
- * When it gets there, it can optionally perform a double click, scheduled as
- * separate one-shot actions so that the scheduler is never blocked.
+ * Runs on its own virtual thread: it mostly sleeps between steps, so blocking
+ * it is free. When it gets to its destination, it can optionally perform a
+ * double click, with the pacing the app has always used.
  *
  * All the movements it performs are reported to the {@link RobotMouseTracker},
  * so that the away detection can tell them apart from the user's.
@@ -26,7 +23,6 @@ public class SingleStepMovementTask implements Runnable {
     /** Delay between two consecutive cursor steps, in milliseconds. */
     private static final long STEP_DELAY_MILLISECONDS = 2L;
 
-    private final ScheduledExecutorService scheduler;
     private final RobotMouseTracker robotTracker;
     private final Robot robot;
     private final int destX;
@@ -38,9 +34,8 @@ public class SingleStepMovementTask implements Runnable {
     private float stepX;
     private float stepY;
 
-    public SingleStepMovementTask(ScheduledExecutorService scheduler, RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click) throws AWTException {
+    public SingleStepMovementTask(RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click) throws AWTException {
 
-        this.scheduler = scheduler;
         this.robotTracker = robotTracker;
         this.destX = destinationX;
         this.destY = destinationY;
@@ -69,37 +64,29 @@ public class SingleStepMovementTask implements Runnable {
         robotTracker.moveStarted();
 
         try {
-            tick();
-        } catch (RuntimeException ex) {
-            // whatever happened, don't leave the tracker stuck on "moving"
-            LOGGER.error("Unexpected error while moving the cursor", ex);
-            robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
-        }
-    }
+            while (!hasReachedDestination()) {
+                // when less than a full step is left, move exactly what is
+                // left, so that both axes always land on their destination
+                stepX = adjustedStep(currentX, destX, stepX);
+                stepY = adjustedStep(currentY, destY, stepY);
 
-    private void tick() {
+                currentX = advance(currentX, destX, stepX);
+                currentY = advance(currentY, destY, stepY);
 
-        if (hasReachedDestination()) {
+                robot.mouseMove(Math.round(currentX), Math.round(currentY));
+
+                Thread.sleep(STEP_DELAY_MILLISECONDS);
+            }
+
             onDestinationReached();
-            return;
-        }
-
-        // when less than a full step is left, move exactly what is left,
-        // so that both axes always land exactly on their destination
-        stepX = adjustedStep(currentX, destX, stepX);
-        stepY = adjustedStep(currentY, destY, stepY);
-
-        currentX = advance(currentX, destX, stepX);
-        currentY = advance(currentY, destY, stepY);
-
-        robot.mouseMove(Math.round(currentX), Math.round(currentY));
-
-        try {
-            scheduler.schedule(this, STEP_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
-        } catch (RejectedExecutionException ex) {
-            // the scheduler was shut down mid-movement: the automation was
-            // stopped, so just end the movement chain here
-            LOGGER.debug("Movement interrupted: scheduler is shut down");
+        } catch (InterruptedException ex) {
+            // the movement was interrupted: the automation was stopped, so
+            // just end the movement here
+            Thread.currentThread().interrupt();
+            LOGGER.debug("Movement interrupted");
+            robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
+        } catch (RuntimeException ex) {
+            LOGGER.error("Unexpected error while moving the cursor", ex);
             robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
         }
     }
@@ -108,35 +95,29 @@ public class SingleStepMovementTask implements Runnable {
         return Math.round(currentX) == destX && Math.round(currentY) == destY;
     }
 
-    private void onDestinationReached() {
+    private void onDestinationReached() throws InterruptedException {
         LOGGER.info("Reached destination [{}, {}], stopping mover", destX, destY);
 
         robotTracker.moveEnded(destX, destY);
 
         if (click) {
-            scheduleClickSequence();
+            performClickSequence();
         }
     }
 
     /**
-     * Schedules a double click with the same pacing the app has always used:
+     * Performs a double click with the same pacing the app has always used:
      * press at +500ms, release at +700ms, press at +1200ms, release at +1400ms.
      */
-    private void scheduleClickSequence() {
-        scheduleClick(500L, true);
-        scheduleClick(700L, false);
-        scheduleClick(1200L, true);
-        scheduleClick(1400L, false);
-    }
-
-    private void scheduleClick(long delayMillis, boolean press) {
-        scheduler.schedule(() -> {
-            if (press) {
-                robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-            } else {
-                robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-            }
-        }, delayMillis, TimeUnit.MILLISECONDS);
+    private void performClickSequence() throws InterruptedException {
+        Thread.sleep(500L);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        Thread.sleep(200L);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        Thread.sleep(500L);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        Thread.sleep(200L);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
     }
 
     /**

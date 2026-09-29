@@ -15,6 +15,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,8 @@ public class MainWindow
     private final JFrame frame = new JFrame();
     private Button toggleButton;
 
-    private ScheduledExecutorService scheduler;
+    private ScheduledExecutorService periodicScheduler;
+    private ExecutorService movementExecutor;
     private CursorMover cursorMover;
 
     /**
@@ -142,21 +144,28 @@ public class MainWindow
     private void startAutomation() {
         LOGGER.info("Starting automation");
 
-        scheduler = Executors.newScheduledThreadPool(3, runnable -> {
+        // periodic work (polling and movement cadence) on a classic scheduler,
+        // so that it can be scheduled with fixed delays
+        periodicScheduler = Executors.newScheduledThreadPool(2, runnable -> {
             Thread thread = new Thread(runnable, "autosqueal-scheduler");
             thread.setDaemon(true);
             return thread;
         });
+
+        // movements and clicks run on virtual threads: they mostly sleep,
+        // and blocking them costs nothing
+        movementExecutor = Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual().name("autosqueal-movement-").factory());
 
         // away-detection: polls the cursor position and ignores the movements
         // the app performs itself, as reported by the robot mouse tracker.
         // the automation only moves the mouse when the user is away.
         RobotMouseTracker robotTracker = new RobotMouseTracker();
         CursorMoveListener cursorMoveListener = new CursorMoveListener(robotTracker);
-        scheduler.scheduleWithFixedDelay(cursorMoveListener, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        periodicScheduler.scheduleWithFixedDelay(cursorMoveListener, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
-        cursorMover = new CursorMover(scheduler, robotTracker, cursorMoveListener::isUserAway);
-        scheduler.scheduleWithFixedDelay(cursorMover,
+        cursorMover = new CursorMover(movementExecutor, robotTracker, cursorMoveListener::isUserAway);
+        periodicScheduler.scheduleWithFixedDelay(cursorMover,
                 AUTOMATION_START_DELAY_SECONDS,
                 RunnerUtil.SECONDS_BETWEEN_MOVES,
                 TimeUnit.SECONDS);
@@ -165,10 +174,17 @@ public class MainWindow
     private void stopAutomation() {
         LOGGER.info("Stopping automation");
 
-        if (scheduler != null) {
-            scheduler.shutdownNow();
-            scheduler = null;
+        if (periodicScheduler != null) {
+            periodicScheduler.shutdownNow();
+            periodicScheduler = null;
         }
+
+        if (movementExecutor != null) {
+            // interrupts the in-flight movement threads, too
+            movementExecutor.shutdownNow();
+            movementExecutor = null;
+        }
+
         cursorMover = null;
     }
 
