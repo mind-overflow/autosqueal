@@ -31,7 +31,7 @@ public class MainWindow
     private static final long AWAY_POLL_INTERVAL_SECONDS = 1L;
 
     private final JFrame frame = new JFrame();
-    private Button toggleButton;
+    private JButton toggleButton;
 
     private ScheduledExecutorService periodicScheduler;
     private ExecutorService movementExecutor;
@@ -56,7 +56,7 @@ public class MainWindow
             }
         });
 
-        toggleButton = new Button();
+        toggleButton = new JButton();
         toggleButton.setBounds(new Rectangle((WINDOW_WIDTH / 2) - 60, WINDOW_HEIGHT - 60, 120, 30));
         toggleButton.addActionListener(e -> toggleRunning());
         frame.add(toggleButton);
@@ -106,24 +106,6 @@ public class MainWindow
         }
 
         return null;
-    }
-
-    public BufferedImage getBufferedImage(Image img) {
-        if (img instanceof BufferedImage image)
-        {
-            return image;
-        }
-
-        // Create a buffered image with transparency
-        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the image on to the buffered image
-        Graphics2D bGr = bimage.createGraphics();
-        bGr.drawImage(img, 0, 0, null);
-        bGr.dispose();
-
-        // Return the buffered image
-        return bimage;
     }
 
     /**
@@ -197,7 +179,7 @@ public class MainWindow
         String hotkey = "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) + "]"
                 + "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) + "]";
 
-        toggleButton.setLabel((cursorMover == null ? "Start " : "Stop ") + hotkey);
+        toggleButton.setText((cursorMover == null ? "Start " : "Stop ") + hotkey);
     }
 
 }
