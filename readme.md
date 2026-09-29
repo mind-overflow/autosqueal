@@ -29,6 +29,10 @@
  2. `cd` into the directory and run `mvn clean package`.  
  3. you will find a runnable jar with dependencies in the `target/` folder.  
  4. run the built jar file with `java -jar target/autosqueal-*-jar-with-dependencies.jar`.
+
+**macos .app bundle**  
+ - on macos, run `mvn clean package -Pmac-app`: you will find `autosqueal.app` in `target/jpackage/`.  
+ - the first time you run it, grant it the accessibility and screen recording permissions in system settings, like any other java app.
   
 ## support  
 | category            | info                                                          |
