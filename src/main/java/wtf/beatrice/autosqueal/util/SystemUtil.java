@@ -6,14 +6,18 @@ public class SystemUtil
 {
 
     public static OperatingSystem getHostSystem() {
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-        if (osName.contains("win")) {
+        return fromOsName(System.getProperty("os.name"));
+    }
+
+    public static OperatingSystem fromOsName(String osName) {
+        String normalizedOsName = osName.toLowerCase(Locale.ENGLISH);
+        if (normalizedOsName.contains("win")) {
             return OperatingSystem.WINDOWS;
-        } else if (osName.contains("nix") ||
-                osName.contains("nux") ||
-                osName.contains("aix")) {
+        } else if (normalizedOsName.contains("nix") ||
+                normalizedOsName.contains("nux") ||
+                normalizedOsName.contains("aix")) {
             return OperatingSystem.LINUX;
-        } else if (osName.contains("mac")) {
+        } else if (normalizedOsName.contains("mac")) {
             return OperatingSystem.MAC_OS;
         } else {
             return OperatingSystem.UNKNOWN;
