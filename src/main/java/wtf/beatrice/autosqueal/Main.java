@@ -38,7 +38,7 @@ public class Main {
         }
     }
 
-    private static boolean registerJNativeHook() {
+    public static boolean registerJNativeHook() {
         LOGGER.info("Registering jnativehook library...");
         try {
             GlobalScreen.registerNativeHook();

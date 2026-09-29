@@ -177,26 +177,41 @@ public class MainWindow
 
     /**
      * Explains that the app cannot work without its permissions, and offers
-     * a shortcut to the right system settings pane. Must be called on the
-     * EDT, after the window is visible.
+     * a shortcut to the right system settings pane. the hook is retried on
+     * demand, so the app can start working without a restart. must be called
+     * on the EDT, after the window is visible.
      */
     public void showPermissionsHelp() {
-        Object[] options = {"Open System Settings", "Close"};
+        Object[] options = {"Open System Settings", "Try Again", "Close"};
 
-        int choice = JOptionPane.showOptionDialog(frame,
-                "autosqueal needs the accessibility permission to move the mouse and to\n"
-                        + "listen for the ctrl+alt hotkey, and the screen recording one to\n"
-                        + "show the screen preview. they cannot be granted while it is running.\n\n"
-                        + "grant them in privacy & security, then restart autosqueal.",
-                "permissions needed",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                options,
-                options[0]);
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(frame,
+                    "autosqueal needs the accessibility permission to move the mouse and to\n"
+                            + "listen for the ctrl+alt hotkey, and the screen recording one to\n"
+                            + "show the screen preview.\n\n"
+                            + "grant them in privacy & security, then press \"try again\".\n"
+                            + "if autosqueal already appears in the list, remove it with the\n"
+                            + "minus button and allow it again: every rebuild looks like a\n"
+                            + "different app to the system.",
+                    "permissions needed",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
 
-        if (choice == 0) {
-            openPrivacySettings();
+            if (choice == 0) {
+                openPrivacySettings();
+            } else if (choice == 1) {
+                if (Main.registerJNativeHook()) {
+                    LOGGER.info("The native hook was registered on a later attempt!");
+                    return;
+                }
+            } else {
+                // closed or gave up: leave the app running, the window and the
+                // tray icon still work
+                return;
+            }
         }
     }
 
