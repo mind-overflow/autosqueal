@@ -176,23 +176,26 @@ public class MainWindow
     }
 
     /**
-     * Explains that the app cannot work without its permissions, and offers
-     * a shortcut to the right system settings pane. the hook is retried on
-     * demand, so the app can start working without a restart. must be called
-     * on the EDT, after the window is visible.
+     * Explains which permissions the app needs and offers to open each pane.
+     * the hook is retried on demand, so the app can start working without a
+     * restart. must be called on the EDT, after the window is visible.
      */
     public void showPermissionsHelp() {
-        Object[] options = {"Open System Settings", "Try Again", "Close"};
+        Object[] options = {"Open Device Control Settings", "Open Screen Recording Settings", "Try Again", "Close"};
 
         while (true) {
             int choice = JOptionPane.showOptionDialog(frame,
-                    "autosqueal needs the accessibility permission to move the mouse and to\n"
-                            + "listen for the ctrl+alt hotkey, and the screen recording one to\n"
-                            + "show the screen preview.\n\n"
-                            + "grant them in privacy & security, then press \"try again\".\n"
-                            + "if autosqueal already appears in the list, remove it with the\n"
-                            + "minus button and allow it again: every rebuild looks like a\n"
-                            + "different app to the system.",
+                    "autosqueal needs three separate permissions to work:\n\n"
+                            + "1. device control and data access — called \"accessibility\" on older macos\n"
+                            + "   versions — lets the app listen for the ctrl+alt hotkey.\n"
+                            + "   if the pane shows a separate \"events\" switch for autosqueal, turn\n"
+                            + "   that on too: it is what lets the app move the mouse and click.\n\n"
+                            + "2. screen recording — lets the app take the screenshot shown\n"
+                            + "   in the main window.\n\n"
+                            + "open each pane, unlock it, and make sure autosqueal is listed and switched on.\n"
+                            + "if it is already listed, remove it with the minus button and re-add it:\n"
+                            + "every rebuild looks like a different app to the system.\n"
+                            + "when you are done, press \"try again\".",
                     "permissions needed",
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.WARNING_MESSAGE,
@@ -201,8 +204,10 @@ public class MainWindow
                     options[0]);
 
             if (choice == 0) {
-                openPrivacySettings();
+                openPrivacyPane("Privacy_Accessibility");
             } else if (choice == 1) {
+                openPrivacyPane("Privacy_ScreenCapture");
+            } else if (choice == 2) {
                 if (Main.registerJNativeHook()) {
                     LOGGER.info("The native hook was registered on a later attempt!");
                     return;
@@ -215,15 +220,15 @@ public class MainWindow
         }
     }
 
-    /** Opens the privacy & security pane at the accessibility section. */
-    private void openPrivacySettings() {
+    /** Opens the privacy & security pane for the given anchor. */
+    private void openPrivacyPane(String privacyAnchor) {
         if (SystemUtil.getHostSystem() != SystemUtil.OperatingSystem.MAC_OS) {
             return;
         }
 
         try {
             new ProcessBuilder("open",
-                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                    "x-apple.systempreferences:com.apple.preference.security?" + privacyAnchor)
                     .start();
         } catch (IOException ex) {
             LOGGER.error("Could not open the system settings", ex);

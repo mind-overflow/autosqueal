@@ -32,7 +32,7 @@
 
 **macos .app bundle**  
  - on macos, run `mvn clean package -Pmac-app`: you will find `autosqueal.app` in `target/jpackage/`.  
- - the first time you run it, grant it the accessibility and screen recording permissions in system settings, like any other java app.
+ - the first time you run it, grant it the device control and data access permission (called "accessibility" on older macos versions) and the screen recording one, in system settings, like any other java app.
   
 ## support  
 | category            | info                                                          |
