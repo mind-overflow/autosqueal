@@ -169,6 +169,8 @@
                                         <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
                                         <argument>--main-class</argument>
                                         <argument>wtf.beatrice.autosqueal.Main</argument>
+                                        <argument>--java-options</argument>
+                                        <argument>--enable-native-access=ALL-UNNAMED</argument>
                                         <argument>--mac-package-identifier</argument>
                                         <argument>wtf.beatrice.autosqueal</argument>
                                         <argument>--mac-package-name</argument>
