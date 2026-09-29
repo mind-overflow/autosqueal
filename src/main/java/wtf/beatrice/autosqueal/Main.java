@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
 
+import javax.swing.*;
+
 public class Main {
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
@@ -16,7 +18,9 @@ public class Main {
         LOGGER.info("Hello world!");
 
         registerJNativeHook();
-        mainWindow.init();
+
+        // all Swing components must be created and updated on the EDT
+        SwingUtilities.invokeLater(mainWindow::init);
     }
 
     private static void registerJNativeHook() {
@@ -31,6 +35,17 @@ public class Main {
             LOGGER.error(ex.getMessage());
 
             System.exit(1);
+        }
+    }
+
+    public static void unregisterJNativeHook() {
+        try {
+            GlobalScreen.unregisterNativeHook();
+            LOGGER.info("Successfully unregistered jnativehook library!");
+        }
+        catch (NativeHookException ex) {
+            LOGGER.error("There was a problem unregistering the native hook.");
+            LOGGER.error(ex.getMessage());
         }
     }
 

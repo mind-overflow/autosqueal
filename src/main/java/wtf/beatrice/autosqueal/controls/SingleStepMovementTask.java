@@ -5,113 +5,163 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
-import java.util.TimerTask;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class SingleStepMovementTask extends TimerTask {
+/**
+ * Moves the mouse cursor towards a destination one small step at a time,
+ * re-scheduling itself on the shared scheduler until the destination is reached.
+ *
+ * When it gets there, it can optionally perform a double click, scheduled as
+ * separate one-shot actions so that the scheduler is never blocked.
+ */
+public class SingleStepMovementTask implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger(SingleStepMovementTask.class);
 
-    final int destX;
-    final int destY;
-    final Robot robot;
+    /** Delay between two consecutive cursor steps, in milliseconds. */
+    private static final long STEP_DELAY_MILLISECONDS = 2L;
 
-    float currentX;
-    float currentY;
+    private final ScheduledExecutorService scheduler;
+    private final Robot robot;
+    private final int destX;
+    private final int destY;
+    private final boolean click;
 
-    float stepX = 1;
-    float stepY = 1;
-    boolean isRunning = true;
-    boolean click;
+    private float currentX;
+    private float currentY;
+    private float stepX;
+    private float stepY;
 
+    public SingleStepMovementTask(ScheduledExecutorService scheduler, int destinationX, int destinationY, boolean click) throws AWTException {
 
-    public SingleStepMovementTask(int destinationX, int destinationY, boolean click) throws AWTException {
-
+        this.scheduler = scheduler;
+        this.destX = destinationX;
+        this.destY = destinationY;
         this.click = click;
 
-        currentX = MouseInfo.getPointerInfo().getLocation().x;
-        currentY = MouseInfo.getPointerInfo().getLocation().y;
+        Point location = MouseInfo.getPointerInfo().getLocation();
+        this.currentX = location.x;
+        this.currentY = location.y;
 
-        destX = destinationX;
-        destY = destinationY;
+        int lengthX = Math.round(Math.abs(currentX - destX));
+        int lengthY = Math.round(Math.abs(currentY - destY));
 
-        int lengthX;
-        int lengthY;
-
-        lengthX = Math.round(Math.abs(currentX - destX));
-        lengthY = Math.round(Math.abs(currentY - destY));
-
-        if(lengthX > lengthY) {
-            stepX = lengthX / (float) lengthY;
-        }
-
-        if(lengthY > lengthX) {
-            stepY = lengthY / (float) lengthX;
-        }
+        this.stepX = computeStepX(lengthX, lengthY);
+        this.stepY = computeStepY(lengthX, lengthY);
 
         LOGGER.info("Dest: [{}, {}], Curr: [{}, {}]", destX, destY, currentX, currentY);
-        LOGGER.info("Len: [{}, {}]", lengthX, lengthY);
         LOGGER.info("Step: [{}, {}]", stepX, stepY);
 
-        robot = new Robot();
-
+        this.robot = new Robot();
     }
 
     @Override
     public void run() {
-        if(Math.abs(currentX - destX) < 1) {
-            stepX = currentX - destX;
-        }
 
-        if(Math.abs(currentY - destY) < 1) {
-            stepY = currentY - destY;
-        }
-
-        if(destX == Math.round(currentX) || destY == Math.round(currentY)) {
-
-            if (click) {
-                try {
-                    Thread.sleep(500);
-                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                    Thread.sleep(200);
-                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                    Thread.sleep(500);
-                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                    Thread.sleep(200);
-                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    LOGGER.error(e);
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            LOGGER.info("Reached destination, stopping mover timer");
-            LOGGER.info("Dest: [{}, {}], Curr: [{}, {}]", destX, destY, currentX, currentY);
-            isRunning = false;
-            this.cancel();
+        if (hasReachedDestination()) {
+            onDestinationReached();
             return;
         }
 
-        if(currentX > destX) {
-            currentX -= stepX;
-        }
+        // when less than a full step is left, move exactly what is left,
+        // so that both axes always land exactly on their destination
+        stepX = adjustedStep(currentX, destX, stepX);
+        stepY = adjustedStep(currentY, destY, stepY);
 
-        if(currentY > destY) {
-            currentY -= stepY;
-        }
-
-        if(currentX < destX) {
-            currentX += stepX;
-        }
-
-        if(currentY < destY) {
-            currentY += stepY;
-        }
+        currentX = advance(currentX, destX, stepX);
+        currentY = advance(currentY, destY, stepY);
 
         robot.mouseMove(Math.round(currentX), Math.round(currentY));
+
+        try {
+            scheduler.schedule(this, STEP_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException ex) {
+            // the scheduler was shut down mid-movement: the automation was
+            // stopped, so just end the movement chain here
+            LOGGER.debug("Movement interrupted: scheduler is shut down");
+        }
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    private boolean hasReachedDestination() {
+        return Math.round(currentX) == destX && Math.round(currentY) == destY;
+    }
+
+    private void onDestinationReached() {
+        LOGGER.info("Reached destination [{}, {}], stopping mover", destX, destY);
+
+        if (click) {
+            scheduleClickSequence();
+        }
+    }
+
+    /**
+     * Schedules a double click with the same pacing the app has always used:
+     * press at +500ms, release at +700ms, press at +1200ms, release at +1400ms.
+     */
+    private void scheduleClickSequence() {
+        scheduleClick(500L, true);
+        scheduleClick(700L, false);
+        scheduleClick(1200L, true);
+        scheduleClick(1400L, false);
+    }
+
+    private void scheduleClick(long delayMillis, boolean press) {
+        scheduler.schedule(() -> {
+            if (press) {
+                robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+            } else {
+                robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+            }
+        }, delayMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Step to take on the X axis so that both axes reach their destination
+     * after the same number of steps. Returns 0 when there is no movement to make.
+     */
+    static float computeStepX(int lengthX, int lengthY) {
+        if (lengthX == 0) {
+            return 0.0f;
+        }
+        if (lengthX >= lengthY) {
+            return 1.0f;
+        }
+        return lengthX / (float) lengthY;
+    }
+
+    /**
+     * Step to take on the Y axis so that both axes reach their destination
+     * after the same number of steps. Returns 0 when there is no movement to make.
+     */
+    static float computeStepY(int lengthX, int lengthY) {
+        if (lengthY == 0) {
+            return 0.0f;
+        }
+        if (lengthY > lengthX) {
+            return 1.0f;
+        }
+        return lengthY / (float) lengthX;
+    }
+
+    /**
+     * When less than a whole step is left to travel, move exactly what is left
+     * instead of a whole step, so that the cursor doesn't overshoot the destination.
+     */
+    static float adjustedStep(float current, float destination, float step) {
+        float remaining = Math.abs(current - destination);
+        return remaining < 1.0f ? remaining : step;
+    }
+
+    /** Moves current towards destination by step, in the right direction. */
+    static float advance(float current, float destination, float step) {
+        if (current > destination) {
+            return current - step;
+        }
+        if (current < destination) {
+            return current + step;
+        }
+        return current;
     }
 }

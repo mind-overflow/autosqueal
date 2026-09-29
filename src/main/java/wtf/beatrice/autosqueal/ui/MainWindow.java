@@ -3,15 +3,19 @@ package wtf.beatrice.autosqueal.ui;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.Main;
 import wtf.beatrice.autosqueal.controls.CursorMover;
-import wtf.beatrice.autosqueal.listener.CursorMoveListener;
 import wtf.beatrice.autosqueal.util.RunnerUtil;
 import wtf.beatrice.autosqueal.util.SystemUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MainWindow
 {
@@ -20,22 +24,37 @@ public class MainWindow
     private static final int WINDOW_HEIGHT = 700;
     private static final int WINDOW_WIDTH = 800;
 
-    private Timer timerRunner = new Timer();
-    private CursorMover cursorMover = new CursorMover();
+    private static final long AUTOMATION_START_DELAY_SECONDS = 1L;
+
+    private final JFrame frame = new JFrame();
     private Button toggleButton;
 
+    private ScheduledExecutorService scheduler;
+    private CursorMover cursorMover;
+
+    /**
+     * Builds and shows the main window, and starts the automation.
+     * Must be called on the EDT.
+     */
     public void init() {
 
-        JFrame frame = new JFrame();
         frame.setSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
         frame.setTitle("autosqueal");
         frame.setResizable(false);
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                LOGGER.info("Shutting down...");
+                stopAutomation();
+                Main.unregisterJNativeHook();
+            }
+        });
 
         toggleButton = new Button();
         toggleButton.setBounds(new Rectangle((WINDOW_WIDTH / 2) - 60, WINDOW_HEIGHT - 60, 120, 30));
         toggleButton.addActionListener(e -> toggleRunning());
         frame.add(toggleButton);
-        toggleRunning();
 
         int bordersPx = 10;
         int rescaleRateo = ((WINDOW_WIDTH - (2 * bordersPx)) * 100) / RunnerUtil.SCREEN_WIDTH;
@@ -50,9 +69,11 @@ public class MainWindow
         timestampLabel.setBounds(new Rectangle(bordersPx, bordersPx + rescaleHeight + bordersPx, 100, 30));
         frame.add(timestampLabel);
 
-
         frame.setLayout(null);
         frame.setVisible(true);
+
+        startAutomation();
+        updateToggleLabel();
     }
 
     private Image getScreenCapture(int rescaleWidth, int rescaleHeight) {
@@ -100,38 +121,61 @@ public class MainWindow
         return bimage;
     }
 
+    /**
+     * Toggles the automation on or off. Safe to call from any thread: the actual
+     * work is always marshalled to the EDT, since it touches Swing components.
+     */
     public void toggleRunning() {
+        SwingUtilities.invokeLater(() -> {
+            if (cursorMover == null) {
+                startAutomation();
+            } else {
+                stopAutomation();
+            }
+            updateToggleLabel();
+        });
+    }
 
-        String label;
+    private void startAutomation() {
+        LOGGER.info("Starting automation");
 
-        if (cursorMover == null) {
-            timerRunner = new Timer();
-            CursorMoveListener cursorMoveListener = new CursorMoveListener();
-            timerRunner.schedule(cursorMoveListener, 0L, 1000L);
+        scheduler = Executors.newScheduledThreadPool(3, runnable -> {
+            Thread thread = new Thread(runnable, "autosqueal-scheduler");
+            thread.setDaemon(true);
+            return thread;
+        });
+        cursorMover = new CursorMover(scheduler);
 
-            cursorMover = new CursorMover();
-            timerRunner.schedule(cursorMover, 1000L, RunnerUtil.SECONDS_BETWEEN_MOVES * 1000L);
+        // note: away-detection (CursorMoveListener) is intentionally not scheduled here.
+        // as it is, it cannot tell the user's movements apart from the movements the app
+        // itself makes, so it would always think the user is present. it will be reworked
+        // and re-enabled in a future iteration.
+        scheduler.scheduleWithFixedDelay(cursorMover,
+                AUTOMATION_START_DELAY_SECONDS,
+                RunnerUtil.SECONDS_BETWEEN_MOVES,
+                TimeUnit.SECONDS);
+    }
 
-            label = "Stop [" +
-                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) +
-                    "][" +
-                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) +
-                    "]";
+    private void stopAutomation() {
+        LOGGER.info("Stopping automation");
+
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+            scheduler = null;
         }
-        else {
-            timerRunner.cancel();
+        cursorMover = null;
+    }
 
-            cursorMover = null;
-
-            label = "Start [" +
-                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) +
-                    "][" +
-                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) +
-                    "]";
+    private void updateToggleLabel() {
+        if (toggleButton == null) {
+            // the window is not initialized yet
+            return;
         }
 
-        toggleButton.setLabel(label);
+        String hotkey = "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) + "]"
+                + "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) + "]";
 
+        toggleButton.setLabel((cursorMover == null ? "Start " : "Stop ") + hotkey);
     }
 
 }

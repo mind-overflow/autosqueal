@@ -1,7 +1,5 @@
 package wtf.beatrice.autosqueal.listener;
 
-import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import org.apache.logging.log4j.LogManager;
@@ -14,46 +12,40 @@ import java.util.List;
 public class KeyPressListener implements NativeKeyListener
 {
     private static final Logger LOGGER = LogManager.getLogger(KeyPressListener.class);
-    private static final List<Integer> pressedKeysIds = new ArrayList<>();
+    private final List<Integer> pressedKeys = new ArrayList<>();
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        String key = NativeKeyEvent.getKeyText(e.getKeyCode());
-        LOGGER.info("Key Pressed: {}", key);
-
-        if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
-            try {
-                GlobalScreen.unregisterNativeHook();
-            } catch (NativeHookException nativeHookException) {
-                LOGGER.error("Failed to unregister native hook", nativeHookException);
-            }
+        // the OS fires repeated "press" events while a key is being held down; ignore them,
+        // otherwise holding the toggle combo down would rapidly toggle the app on and off
+        if (pressedKeys.contains(e.getKeyCode())) {
+            return;
         }
 
-        pressedKeysIds.add(e.getKeyCode());
+        pressedKeys.add(e.getKeyCode());
+        LOGGER.info("Key Pressed: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
-        handlePressedKeys();
+        if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
+            Main.unregisterJNativeHook();
+        }
+
+        // toggle only when the second key of the combo is pressed down: not only does this
+        // fire exactly once per combo, but it also avoids toggling when any other key is
+        // pressed or released while ctrl+alt happen to be held down
+        if ((e.getKeyCode() == NativeKeyEvent.VC_CONTROL && pressedKeys.contains(NativeKeyEvent.VC_ALT))
+                || (e.getKeyCode() == NativeKeyEvent.VC_ALT && pressedKeys.contains(NativeKeyEvent.VC_CONTROL))) {
+            LOGGER.warn("Received shutdown keystroke: [{}][{}]",
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL),
+                    NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT));
+
+            Main.getMainWindow().toggleRunning();
+        }
     }
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        String key = NativeKeyEvent.getKeyText(e.getKeyCode());
-        LOGGER.info("Key Released: {}", key);
+        LOGGER.info("Key Released: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
-        pressedKeysIds.remove((Integer) e.getKeyCode());
-
-        handlePressedKeys();
-    }
-
-    private void handlePressedKeys() {
-        if (pressedKeysIds.contains(NativeKeyEvent.VC_ALT) &&
-        pressedKeysIds.contains(NativeKeyEvent.VC_CONTROL)) {
-
-            StringBuilder keys = new StringBuilder();
-            pressedKeysIds.forEach(keyCode -> keys.append("[").append(NativeKeyEvent.getKeyText(keyCode)).append("]"));
-
-            LOGGER.warn("Received shutdown keystroke: {}", keys);
-
-            Main.getMainWindow().toggleRunning();
-        }
+        pressedKeys.remove((Integer) e.getKeyCode());
     }
 }
