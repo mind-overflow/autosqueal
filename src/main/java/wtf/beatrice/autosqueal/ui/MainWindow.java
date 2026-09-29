@@ -15,6 +15,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -172,6 +173,46 @@ public class MainWindow
         }
 
         Main.unregisterJNativeHook();
+    }
+
+    /**
+     * Explains that the app cannot work without its permissions, and offers
+     * a shortcut to the right system settings pane. Must be called on the
+     * EDT, after the window is visible.
+     */
+    public void showPermissionsHelp() {
+        Object[] options = {"Open System Settings", "Close"};
+
+        int choice = JOptionPane.showOptionDialog(frame,
+                "autosqueal needs the accessibility permission to move the mouse and to\n"
+                        + "listen for the ctrl+alt hotkey, and the screen recording one to\n"
+                        + "show the screen preview. they cannot be granted while it is running.\n\n"
+                        + "grant them in privacy & security, then restart autosqueal.",
+                "permissions needed",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (choice == 0) {
+            openPrivacySettings();
+        }
+    }
+
+    /** Opens the privacy & security pane at the accessibility section. */
+    private void openPrivacySettings() {
+        if (SystemUtil.getHostSystem() != SystemUtil.OperatingSystem.MAC_OS) {
+            return;
+        }
+
+        try {
+            new ProcessBuilder("open",
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                    .start();
+        } catch (IOException ex) {
+            LOGGER.error("Could not open the system settings", ex);
+        }
     }
 
     /**

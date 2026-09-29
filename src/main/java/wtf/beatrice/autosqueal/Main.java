@@ -19,10 +19,15 @@ public class Main {
         LOGGER.info("Hello world!");
 
         useSystemLookAndFeel();
-        registerJNativeHook();
+        boolean hookRegistered = registerJNativeHook();
 
         // all Swing components must be created and updated on the EDT
-        SwingUtilities.invokeLater(mainWindow::init);
+        SwingUtilities.invokeLater(() -> {
+            mainWindow.init();
+            if (!hookRegistered) {
+                mainWindow.showPermissionsHelp();
+            }
+        });
     }
 
     private static void useSystemLookAndFeel() {
@@ -33,18 +38,22 @@ public class Main {
         }
     }
 
-    private static void registerJNativeHook() {
+    private static boolean registerJNativeHook() {
         LOGGER.info("Registering jnativehook library...");
         try {
             GlobalScreen.registerNativeHook();
             GlobalScreen.addNativeKeyListener(new KeyPressListener());
             LOGGER.info("Successfully registered jnativehook library!");
+            return true;
         }
         catch (NativeHookException ex) {
-            LOGGER.error("There was a problem registering the native hook.");
-            LOGGER.error(ex.getMessage());
+            LOGGER.error("There was a problem registering the native hook.", ex);
 
-            System.exit(1);
+            // without the accessibility permission the hotkey cannot be
+            // registered and the mouse cannot be moved either: the app would
+            // look alive but do nothing. don't exit: keep the window and the
+            // tray icon usable, and tell the user what is missing.
+            return false;
         }
     }
 
