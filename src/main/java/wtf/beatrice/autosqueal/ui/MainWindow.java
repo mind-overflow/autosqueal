@@ -37,6 +37,9 @@ public class MainWindow
     private ExecutorService movementExecutor;
     private CursorMover cursorMover;
 
+    private TrayIcon trayIcon;
+    private MenuItem trayToggleItem;
+
     /**
      * Builds and shows the main window, and starts the automation.
      * Must be called on the EDT.
@@ -50,9 +53,7 @@ public class MainWindow
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                LOGGER.info("Shutting down...");
-                stopAutomation();
-                Main.unregisterJNativeHook();
+                cleanup();
             }
         });
 
@@ -76,6 +77,10 @@ public class MainWindow
 
         frame.setLayout(null);
         frame.setVisible(true);
+
+        if (SystemTray.isSupported()) {
+            addTrayIcon();
+        }
 
         startAutomation();
         updateToggleLabel();
@@ -106,6 +111,67 @@ public class MainWindow
         }
 
         return null;
+    }
+
+    /**
+     * Adds a menu bar icon with a toggle entry and a quit entry, so the
+     * automation can be controlled even with the window closed.
+     */
+    private void addTrayIcon() {
+        PopupMenu menu = new PopupMenu();
+
+        trayToggleItem = new MenuItem();
+        trayToggleItem.addActionListener(e -> toggleRunning());
+        menu.add(trayToggleItem);
+
+        MenuItem quitItem = new MenuItem("Quit");
+        quitItem.addActionListener(e -> {
+            cleanup();
+            System.exit(0);
+        });
+        menu.add(quitItem);
+
+        trayIcon = new TrayIcon(createTrayIconImage(), "autosqueal", menu);
+        trayIcon.setImageAutoSize(true);
+
+        try {
+            SystemTray.getSystemTray().add(trayIcon);
+        } catch (AWTException ex) {
+            LOGGER.error("Could not add the tray icon", ex);
+            trayIcon = null;
+            trayToggleItem = null;
+        }
+    }
+
+    /** Draws the little mouse pointer used as tray icon. */
+    private Image createTrayIconImage() {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+
+        int[] xPoints = {3, 3, 6, 8, 10, 8, 12};
+        int[] yPoints = {1, 12, 8, 12, 11, 7, 7};
+
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.setColor(Color.BLACK);
+        graphics.fillPolygon(xPoints, yPoints, xPoints.length);
+        graphics.setColor(Color.WHITE);
+        graphics.drawPolygon(xPoints, yPoints, xPoints.length);
+        graphics.dispose();
+
+        return image;
+    }
+
+    /** Stops the automation and releases everything the app is holding. */
+    private void cleanup() {
+        LOGGER.info("Shutting down...");
+        stopAutomation();
+
+        if (trayIcon != null) {
+            SystemTray.getSystemTray().remove(trayIcon);
+            trayIcon = null;
+        }
+
+        Main.unregisterJNativeHook();
     }
 
     /**
@@ -179,7 +245,12 @@ public class MainWindow
         String hotkey = "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_CONTROL) + "]"
                 + "[" + NativeKeyEvent.getKeyText(NativeKeyEvent.VC_ALT) + "]";
 
-        toggleButton.setText((cursorMover == null ? "Start " : "Stop ") + hotkey);
+        String label = (cursorMover == null ? "Start " : "Stop ") + hotkey;
+
+        toggleButton.setText(label);
+        if (trayToggleItem != null) {
+            trayToggleItem.setLabel(label);
+        }
     }
 
 }
