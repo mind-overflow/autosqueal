@@ -8,6 +8,7 @@ import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
 
 import javax.swing.*;
+import javax.swing.UnsupportedLookAndFeelException;
 
 public class Main {
 
@@ -17,10 +18,19 @@ public class Main {
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
+        useSystemLookAndFeel();
         registerJNativeHook();
 
         // all Swing components must be created and updated on the EDT
         SwingUtilities.invokeLater(mainWindow::init);
+    }
+
+    private static void useSystemLookAndFeel() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ex) {
+            LOGGER.warn("Could not set the system look and feel, using the default one", ex);
+        }
     }
 
     private static void registerJNativeHook() {
