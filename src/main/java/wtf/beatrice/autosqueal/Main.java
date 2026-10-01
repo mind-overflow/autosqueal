@@ -15,6 +15,9 @@ public class Main {
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static final MainWindow mainWindow = new MainWindow();
 
+    /** Whether the hook and its listener are registered, so retries don't add duplicates. */
+    private static boolean hookRegistered = false;
+
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
@@ -39,10 +42,15 @@ public class Main {
     }
 
     public static boolean registerJNativeHook() {
+        if (hookRegistered) {
+            return true;
+        }
+
         LOGGER.info("Registering jnativehook library...");
         try {
             GlobalScreen.registerNativeHook();
             GlobalScreen.addNativeKeyListener(new KeyPressListener());
+            hookRegistered = true;
             LOGGER.info("Successfully registered jnativehook library!");
             return true;
         }
