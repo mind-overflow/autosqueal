@@ -21,6 +21,10 @@ public class Main {
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
+        // ⌘Q on macOS, the IDE stop button and signals all bypass
+        // windowClosing: make cleanup run on every exit path instead
+        Runtime.getRuntime().addShutdownHook(new Thread(mainWindow::cleanup, "autosqueal-shutdown"));
+
         useSystemLookAndFeel();
         boolean hookRegistered = registerJNativeHook();
 
@@ -66,6 +70,10 @@ public class Main {
     }
 
     public static void unregisterJNativeHook() {
+        if (!hookRegistered) {
+            return;
+        }
+
         try {
             GlobalScreen.unregisterNativeHook();
             LOGGER.info("Successfully unregistered jnativehook library!");

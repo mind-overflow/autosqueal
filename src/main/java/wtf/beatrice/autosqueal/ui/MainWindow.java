@@ -12,6 +12,7 @@ import wtf.beatrice.autosqueal.util.SystemUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.desktop.QuitStrategy;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -46,6 +47,9 @@ public class MainWindow
     private TrayIcon trayIcon;
     private MenuItem trayToggleItem;
 
+    /** Whether cleanup already ran, so it can safely be called twice. */
+    private boolean cleanedUp = false;
+
     /**
      * Builds and shows the main window, and starts the automation.
      * Must be called on the EDT.
@@ -62,6 +66,17 @@ public class MainWindow
                 cleanup();
             }
         });
+
+        // ⌘Q on macOS defaults to calling System.exit(0) directly, which
+        // bypasses windowClosing and skips cleanup: route quits through
+        // the window instead, so the hook is always released
+        if (Desktop.isDesktopSupported()) {
+            try {
+                Desktop.getDesktop().setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
+            } catch (UnsupportedOperationException ex) {
+                LOGGER.debug("Quit strategy not supported here", ex);
+            }
+        }
 
         toggleButton = new JButton();
         toggleButton.setBounds(new Rectangle((WINDOW_WIDTH / 2) - 60, WINDOW_HEIGHT - 60, 120, 30));
@@ -167,8 +182,17 @@ public class MainWindow
         return image;
     }
 
-    /** Stops the automation and releases everything the app is holding. */
-    private void cleanup() {
+    /**
+     * Stops the automation and releases everything the app is holding.
+     * Safe to call more than once, from any thread: window closing and
+     * JVM shutdown hooks can race each other on the way out.
+     */
+    public synchronized void cleanup() {
+        if (cleanedUp) {
+            return;
+        }
+        cleanedUp = true;
+
         LOGGER.info("Shutting down...");
         stopAutomation();
 
