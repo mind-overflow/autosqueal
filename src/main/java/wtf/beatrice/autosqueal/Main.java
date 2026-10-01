@@ -4,6 +4,8 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import wtf.beatrice.autosqueal.config.AutoSquealConfig;
+import wtf.beatrice.autosqueal.config.ConfigStore;
 import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
 
@@ -13,13 +15,16 @@ import javax.swing.UnsupportedLookAndFeelException;
 public class Main {
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
-    private static final MainWindow mainWindow = new MainWindow();
+    private static MainWindow mainWindow;
 
     /** Whether the hook and its listener are registered, so retries don't add duplicates. */
     private static boolean hookRegistered = false;
 
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
+
+        AutoSquealConfig config = new ConfigStore().load();
+        mainWindow = new MainWindow(config);
 
         // ⌘Q on macOS, the IDE stop button and signals all bypass
         // windowClosing: make cleanup run on every exit path instead

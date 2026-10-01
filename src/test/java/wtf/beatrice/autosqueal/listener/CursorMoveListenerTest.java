@@ -1,12 +1,11 @@
 package wtf.beatrice.autosqueal.listener;
 
 import org.junit.jupiter.api.Test;
+import wtf.beatrice.autosqueal.config.AutoSquealConfig;
 import wtf.beatrice.autosqueal.controls.RobotMouseTracker;
 
 import java.awt.*;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,73 +13,93 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CursorMoveListenerTest
 {
-    private static final int LOOPS_BEFORE_AWAY = 30;
+    private static final int AWAY_THRESHOLD_SECONDS = 30;
 
     private final RobotMouseTracker robotTracker = new RobotMouseTracker();
+
+    /** The fake clock the listener polls with, in milliseconds. */
+    private long now = 1_000_000L;
 
     /** Builds a listener that reads scripted cursor positions, one per poll. */
     private CursorMoveListener scriptedListener(Point... positions) {
         Queue<Point> positionQueue = new ArrayDeque<>(java.util.List.of(positions));
-        return new CursorMoveListener(robotTracker, positionQueue::remove);
+        return new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positionQueue::remove, () -> now);
     }
 
     private static Point at(int x, int y) {
         return new Point(x, y);
     }
 
+    /** Polls, pretending that the given seconds have passed since the previous poll. */
+    private void poll(CursorMoveListener listener, int secondsSincePreviousPoll) {
+        now += secondsSincePreviousPoll * 1000L;
+        listener.run();
+    }
+
     @Test
     void userIsAwayAfterThirtyStillSeconds() {
-        Point[] still = new Point[LOOPS_BEFORE_AWAY + 2];
+        Point[] still = new Point[AWAY_THRESHOLD_SECONDS + 3];
         for (int i = 0; i < still.length; i++) {
             still[i] = at(100, 100);
         }
         CursorMoveListener listener = scriptedListener(still);
 
         // the first poll seeds the baseline and does not count
-        for (int i = 0; i < LOOPS_BEFORE_AWAY; i++) {
-            listener.run();
+        poll(listener, 1);
+
+        // 29 still seconds: the user is still considered present
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS - 1; i++) {
+            poll(listener, 1);
             assertFalse(listener.isUserAway());
         }
 
-        listener.run();
+        // the 30th still second: the user is away
+        poll(listener, 1);
         assertTrue(listener.isUserAway());
     }
 
     @Test
-    void firstPollDoesNotCountAsMovement() {
-        // the very first position read must seed the baseline: starting anywhere
-        // else would have counted as a user movement and reset the away timer
+    void firstPollDoesNotCountAsMovementOrIdleTime() {
+        // the very first position read must seed the baseline and the
+        // activity clock: starting anywhere else would have counted the
+        // first poll as a movement, or as a full idle period
         CursorMoveListener listener = scriptedListener(at(500, 300), at(500, 300));
 
-        listener.run();
-        listener.run();
+        poll(listener, 5);
+        poll(listener, 10);
 
         assertFalse(listener.isUserAway());
-        // still at (500, 300), so the baseline was seeded correctly
+        // still at (500, 300), and only 10 idle seconds: the seeding poll
+        // consumed the first 5 seconds
     }
 
     @Test
     void userMovementResetsTheAwayTimer() {
-        List<Point> positions = new ArrayList<>();
-        positions.add(at(100, 100));                              // baseline
-        for (int i = 0; i < 5; i++) positions.add(at(100, 100)); // 5 still polls
-        positions.add(at(140, 100));                              // the user moves the mouse
-        for (int i = 0; i < LOOPS_BEFORE_AWAY; i++) positions.add(at(140, 100)); // then it stays put
+        Queue<Point> positions = new ArrayDeque<>();
+        positions.add(at(100, 100));                          // baseline
+        for (int i = 0; i < 3; i++) positions.add(at(100, 100)); // 3 still seconds
+        positions.add(at(140, 100));                          // the user moves the mouse
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS; i++) positions.add(at(140, 100)); // then it stays put
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positions::remove, () -> now);
 
-        CursorMoveListener listener = scriptedListener(positions.toArray(Point[]::new));
-
-        listener.run(); // seed the baseline
-        for (int i = 0; i < 5; i++) listener.run(); // loops = 5
+        poll(listener, 1); // seed the baseline
+        for (int i = 0; i < 3; i++) {
+            poll(listener, 1);
+        }
         assertFalse(listener.isUserAway());
 
-        listener.run(); // the user moved: the away timer resets
+        poll(listener, 1); // the user moved: the away timer resets
         assertFalse(listener.isUserAway());
 
-        // ...and it still takes 30 more still polls to be away again
-        for (int i = 0; i < LOOPS_BEFORE_AWAY - 1; i++) listener.run(); // loops = 29
-        assertFalse(listener.isUserAway());
+        // ...and it still takes 30 more still seconds to be away again
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS - 1; i++) {
+            poll(listener, 1);
+            assertFalse(listener.isUserAway());
+        }
 
-        listener.run(); // loops = 30
+        poll(listener, 1);
         assertTrue(listener.isUserAway());
     }
 
@@ -92,19 +111,21 @@ class CursorMoveListenerTest
         // always think the user was present
 
         // every poll finds the cursor where the app last left it
-        List<Point> positions = new ArrayList<>();
-        positions.add(at(100, 100)); // baseline
-        for (int i = 1; i <= 40; i++) positions.add(at(100 + i, 100));
+        Queue<Point> appPositions = new ArrayDeque<>();
+        appPositions.add(at(100, 100));
+        for (int i = 1; i <= 40; i++) {
+            appPositions.add(at(100 + i, 100));
+        }
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                appPositions::remove, () -> now);
 
-        CursorMoveListener listener = scriptedListener(positions.toArray(Point[]::new));
-
-        listener.run(); // seed the baseline
+        poll(listener, 1); // seed the baseline
 
         for (int i = 1; i <= 40; i++) {
             // the app just finished a movement, leaving the cursor exactly
             // where this poll will find it
             robotTracker.moveEnded(100 + i, 100);
-            listener.run();
+            poll(listener, 1);
         }
 
         // every position change was the app's own doing: the user is away
@@ -115,16 +136,17 @@ class CursorMoveListenerTest
     void ongoingAppMovementsDoNotKeepTheUserPresent() {
         // same as above, but the polls happen while the app is mid-movement,
         // with the cursor transiently at intermediate positions
-        Point[] positions = new Point[41];
-        positions[0] = at(100, 100);
-        for (int i = 1; i < positions.length; i++) {
-            positions[i] = at(100 + (i / 2), 100);
+        Queue<Point> positions = new ArrayDeque<>();
+        positions.add(at(100, 100));
+        for (int i = 1; i <= 40; i++) {
+            positions.add(at(100 + (i / 2), 100));
         }
-        CursorMoveListener listener = scriptedListener(positions);
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positions::remove, () -> now);
 
         robotTracker.moveStarted();
-        for (int i = 1; i < positions.length; i++) {
-            listener.run();
+        for (int i = 0; i <= 40; i++) {
+            poll(listener, 1);
         }
 
         assertTrue(listener.isUserAway());
@@ -132,48 +154,55 @@ class CursorMoveListenerTest
 
     @Test
     void keyboardActivityResetsTheAwayTimer() {
-        List<Point> positions = new ArrayList<>();
-        positions.add(at(100, 100));                              // baseline
-        for (int i = 0; i < 29; i++) positions.add(at(100, 100)); // 29 still polls
-        positions.add(at(100, 100));                              // the user presses a key
-        for (int i = 0; i < LOOPS_BEFORE_AWAY; i++) positions.add(at(100, 100)); // then the mouse stays put
+        Queue<Point> positions = new ArrayDeque<>();
+        positions.add(at(100, 100)); // baseline
+        for (int i = 0; i < 60; i++) {
+            positions.add(at(100, 100)); // the mouse never moves
+        }
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positions::remove, () -> now);
 
-        CursorMoveListener listener = scriptedListener(positions.toArray(Point[]::new));
-
-        listener.run(); // seed the baseline
-        for (int i = 0; i < 29; i++) listener.run(); // loops = 29
+        poll(listener, 1); // seed the baseline
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS - 1; i++) {
+            poll(listener, 1);
+        }
         assertFalse(listener.isUserAway());
 
         // the user is typing without moving the mouse: the timer resets
         listener.reportKeyboardActivity();
-        listener.run();
+        poll(listener, 1);
         assertFalse(listener.isUserAway());
 
-        // ...and it still takes 30 still polls to be away again
-        for (int i = 0; i < LOOPS_BEFORE_AWAY - 1; i++) listener.run(); // loops = 29
-        assertFalse(listener.isUserAway());
+        // ...and it still takes 30 still seconds to be away again
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS - 1; i++) {
+            poll(listener, 1);
+            assertFalse(listener.isUserAway());
+        }
 
-        listener.run(); // loops = 30
+        poll(listener, 1);
         assertTrue(listener.isUserAway());
     }
 
     @Test
     void keyboardActivityBringsTheUserBackWhileAway() {
-        Point[] positions = new Point[LOOPS_BEFORE_AWAY + 3];
-        for (int i = 0; i < positions.length; i++) {
-            positions[i] = at(100, 100);
+        Queue<Point> positions = new ArrayDeque<>();
+        positions.add(at(100, 100));
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS + 3; i++) {
+            positions.add(at(100, 100));
         }
-        CursorMoveListener listener = scriptedListener(positions);
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positions::remove, () -> now);
 
-        for (int i = 0; i <= LOOPS_BEFORE_AWAY; i++) { // baseline + 30 still polls
-            listener.run();
+        poll(listener, 1); // seed the baseline
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS; i++) {
+            poll(listener, 1);
         }
         assertTrue(listener.isUserAway());
 
         // the user comes back at the keyboard: the away state must end,
         // even though the mouse never moved
         listener.reportKeyboardActivity();
-        listener.run();
+        poll(listener, 1);
         assertFalse(listener.isUserAway());
     }
 
@@ -181,34 +210,72 @@ class CursorMoveListenerTest
     void userComingBackIsDetectedWhileTheAppIsWiggling() {
         // the app keeps wiggling while the user is away; when the user comes
         // back and moves the mouse, the away state must end
-
-        // polls: baseline, 30 still polls, two app wiggles, then the user's move
-        Point[] positions = new Point[LOOPS_BEFORE_AWAY + 4];
-        for (int i = 0; i <= LOOPS_BEFORE_AWAY; i++) {
-            positions[i] = at(100, 100);
+        Queue<Point> positions = new ArrayDeque<>();
+        positions.add(at(100, 100));
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS; i++) {
+            positions.add(at(100, 100));
         }
-        positions[LOOPS_BEFORE_AWAY + 1] = at(150, 100);
-        positions[LOOPS_BEFORE_AWAY + 2] = at(200, 100);
-        positions[LOOPS_BEFORE_AWAY + 3] = at(333, 100);
-        CursorMoveListener listener = scriptedListener(positions);
+        positions.add(at(150, 100)); // app wiggle
+        positions.add(at(200, 100)); // app wiggle
+        positions.add(at(333, 100)); // the user's move
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, new AutoSquealConfig(),
+                positions::remove, () -> now);
 
-        // baseline + 30 still polls: the user goes away
-        for (int i = 0; i <= LOOPS_BEFORE_AWAY; i++) {
-            listener.run();
+        poll(listener, 1); // seed the baseline
+        for (int i = 0; i < AWAY_THRESHOLD_SECONDS; i++) {
+            poll(listener, 1);
         }
         assertTrue(listener.isUserAway());
 
         // the app wiggles: each movement is discounted, the user stays "away"
         robotTracker.moveEnded(150, 100);
-        listener.run();
+        poll(listener, 1);
         assertTrue(listener.isUserAway());
 
         robotTracker.moveEnded(200, 100);
-        listener.run();
+        poll(listener, 1);
         assertTrue(listener.isUserAway());
 
         // the user comes back and grabs the mouse
-        listener.run();
+        poll(listener, 1);
+        assertFalse(listener.isUserAway());
+    }
+
+    @Test
+    void thresholdChangesApplyFromTheNextPoll() {
+        // the threshold is read live: a change applies without a restart
+        AutoSquealConfig config = new AutoSquealConfig();
+        config.setAwayThresholdSeconds(10);
+        Queue<Point> positions = new ArrayDeque<>();
+        for (int i = 0; i < 20; i++) {
+            positions.add(at(100, 100));
+        }
+        CursorMoveListener listener = new CursorMoveListener(robotTracker, config,
+                positions::remove, () -> now);
+
+        poll(listener, 1); // seed the baseline
+
+        // 9 still seconds: not away with a 10 seconds threshold
+        for (int i = 0; i < 9; i++) {
+            poll(listener, 1);
+            assertFalse(listener.isUserAway());
+        }
+
+        // 10th second: away
+        poll(listener, 1);
+        assertTrue(listener.isUserAway());
+
+        // the user tightens the threshold to 5: the next poll re-evaluates
+        // and the user is still away (already idle for more than 5 seconds)
+        config.setAwayThresholdSeconds(5);
+        poll(listener, 1);
+        assertTrue(listener.isUserAway());
+
+        // the user loosens the threshold to 600: the same idle time is no
+        // longer enough, so the user is present again — and back to away
+        // only after 600 seconds of stillness
+        config.setAwayThresholdSeconds(600);
+        poll(listener, 1);
         assertFalse(listener.isUserAway());
     }
 }

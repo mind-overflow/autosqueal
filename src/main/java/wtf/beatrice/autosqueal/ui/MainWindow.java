@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import wtf.beatrice.autosqueal.Main;
+import wtf.beatrice.autosqueal.config.AutoSquealConfig;
 import wtf.beatrice.autosqueal.controls.CursorMover;
 import wtf.beatrice.autosqueal.controls.RobotMouseTracker;
 import wtf.beatrice.autosqueal.listener.CursorMoveListener;
@@ -35,10 +36,22 @@ public class MainWindow
     private final JFrame frame = new JFrame();
     private JButton toggleButton;
 
+    private final AutoSquealConfig config;
+
     // the away detection tracks the user, not the automation: it lives from
     // the window's creation and is polled only while the automation runs
-    private final RobotMouseTracker robotTracker = new RobotMouseTracker();
-    private final CursorMoveListener awayDetector = new CursorMoveListener(robotTracker);
+    private final RobotMouseTracker robotTracker;
+    private final CursorMoveListener awayDetector;
+
+    /**
+     * Creates the window around the given settings: the components read
+     * them live, so a change applies without a restart.
+     */
+    public MainWindow(AutoSquealConfig config) {
+        this.config = config;
+        this.robotTracker = new RobotMouseTracker();
+        this.awayDetector = new CursorMoveListener(robotTracker, config);
+    }
 
     private ScheduledExecutorService periodicScheduler;
     private ExecutorService movementExecutor;
