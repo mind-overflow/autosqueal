@@ -40,5 +40,6 @@
 | official repository | [gitea src](https://git.beatrice.wtf/Tools/autosqeal.git)     |
 | mirror repository   | [github src](https://github.com/mind-overflow/autosqueal.git) |
 | build status        | [drone-ci](https://drone.beatrice.wtf/Tools/autosqeal)        |
+| license             | copyright, all rights reserved — see [license](LICENSE)       |
 | dev email           | [hello@beatrice.wtf](mailto:hello@beatrice.wtf)               |
 
