@@ -16,6 +16,7 @@ public class Main {
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
     private static MainWindow mainWindow;
+    private static AutoSquealConfig config;
 
     /** Whether the hook and its listener are registered, so retries don't add duplicates. */
     private static boolean hookRegistered = false;
@@ -23,7 +24,7 @@ public class Main {
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
-        AutoSquealConfig config = new ConfigStore().load();
+        config = new ConfigStore().load();
         mainWindow = new MainWindow(config);
 
         // ⌘Q on macOS, the IDE stop button and signals all bypass
@@ -58,7 +59,8 @@ public class Main {
         LOGGER.info("Registering jnativehook library...");
         try {
             GlobalScreen.registerNativeHook();
-            GlobalScreen.addNativeKeyListener(new KeyPressListener());
+            GlobalScreen.addNativeKeyListener(
+                    new KeyPressListener(mainWindow::toggleRunning, mainWindow::notifyKeyboardActivity, config));
             hookRegistered = true;
             LOGGER.info("Successfully registered jnativehook library!");
             return true;
@@ -87,10 +89,6 @@ public class Main {
             LOGGER.error("There was a problem unregistering the native hook.");
             LOGGER.error(ex.getMessage());
         }
-    }
-
-    public static MainWindow getMainWindow() {
-        return mainWindow;
     }
 
 }
