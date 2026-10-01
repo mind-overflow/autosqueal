@@ -23,11 +23,11 @@ public class KeyPressListener implements NativeKeyListener
         }
 
         pressedKeys.add(e.getKeyCode());
-        LOGGER.info("Key Pressed: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
+        LOGGER.debug("Key Pressed: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
-        if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
-            Main.unregisterJNativeHook();
-        }
+        // any key the user presses means they are present: let the away
+        // detection know, so the app doesn't grab the mouse while they type
+        Main.getMainWindow().notifyKeyboardActivity();
 
         // toggle only when the second key of the combo is pressed down: not only does this
         // fire exactly once per combo, but it also avoids toggling when any other key is
@@ -44,7 +44,7 @@ public class KeyPressListener implements NativeKeyListener
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        LOGGER.info("Key Released: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
+        LOGGER.debug("Key Released: {}", NativeKeyEvent.getKeyText(e.getKeyCode()));
 
         pressedKeys.remove((Integer) e.getKeyCode());
     }

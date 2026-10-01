@@ -10,7 +10,8 @@ import java.util.function.Supplier;
 /**
  * Watches the cursor position and tracks whether the user is away: if the cursor
  * stays still for long enough — ignoring the movements the app performs on its
- * own — the user is considered away.
+ * own — the user is considered away. Keyboard activity counts as presence,
+ * too: a user who is typing is using the machine, even if the mouse never moves.
  */
 public class CursorMoveListener implements Runnable {
 
@@ -27,6 +28,7 @@ public class CursorMoveListener implements Runnable {
     private boolean firstPoll = true;
     private int loops = 0;
     private volatile boolean userAway = false;
+    private volatile boolean keyboardActivity = false;
 
     public CursorMoveListener(RobotMouseTracker robotTracker) {
         this(robotTracker, () -> MouseInfo.getPointerInfo().getLocation());
@@ -37,8 +39,21 @@ public class CursorMoveListener implements Runnable {
         this.currentPosition = currentPosition;
     }
 
+    /**
+     * Reports that the user pressed a key: keyboard activity counts as
+     * presence, so it resets the away timer at the next poll. Safe to call
+     * from any thread.
+     */
+    public void reportKeyboardActivity() {
+        keyboardActivity = true;
+    }
+
     @Override
     public void run() {
+
+        // consume the keyboard activity reported since the previous poll
+        boolean keyboardActivity = this.keyboardActivity;
+        this.keyboardActivity = false;
 
         Point location = currentPosition.get();
 
@@ -52,7 +67,7 @@ public class CursorMoveListener implements Runnable {
         }
 
         boolean positionChanged = location.x != lastSeenX || location.y != lastSeenY;
-        boolean userMoved = positionChanged && !isAppMovement(location);
+        boolean userMoved = keyboardActivity || (positionChanged && !isAppMovement(location));
 
         if (userMoved) {
             if (userAway) {

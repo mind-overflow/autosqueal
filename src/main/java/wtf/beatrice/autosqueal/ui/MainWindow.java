@@ -34,6 +34,11 @@ public class MainWindow
     private final JFrame frame = new JFrame();
     private JButton toggleButton;
 
+    // the away detection tracks the user, not the automation: it lives from
+    // the window's creation and is polled only while the automation runs
+    private final RobotMouseTracker robotTracker = new RobotMouseTracker();
+    private final CursorMoveListener awayDetector = new CursorMoveListener(robotTracker);
+
     private ScheduledExecutorService periodicScheduler;
     private ExecutorService movementExecutor;
     private CursorMover cursorMover;
@@ -236,6 +241,14 @@ public class MainWindow
     }
 
     /**
+     * Forwards keyboard activity to the away detection, so that typing
+     * counts as presence even when the mouse never moves.
+     */
+    public void notifyKeyboardActivity() {
+        awayDetector.reportKeyboardActivity();
+    }
+
+    /**
      * Toggles the automation on or off. Safe to call from any thread: the actual
      * work is always marshalled to the EDT, since it touches Swing components.
      */
@@ -269,11 +282,9 @@ public class MainWindow
         // away-detection: polls the cursor position and ignores the movements
         // the app performs itself, as reported by the robot mouse tracker.
         // the automation only moves the mouse when the user is away.
-        RobotMouseTracker robotTracker = new RobotMouseTracker();
-        CursorMoveListener cursorMoveListener = new CursorMoveListener(robotTracker);
-        periodicScheduler.scheduleWithFixedDelay(cursorMoveListener, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        periodicScheduler.scheduleWithFixedDelay(awayDetector, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
-        cursorMover = new CursorMover(movementExecutor, robotTracker, cursorMoveListener::isUserAway);
+        cursorMover = new CursorMover(movementExecutor, robotTracker, awayDetector::isUserAway);
         periodicScheduler.scheduleWithFixedDelay(cursorMover,
                 AUTOMATION_START_DELAY_SECONDS,
                 RunnerUtil.SECONDS_BETWEEN_MOVES,

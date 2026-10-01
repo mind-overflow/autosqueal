@@ -131,6 +131,53 @@ class CursorMoveListenerTest
     }
 
     @Test
+    void keyboardActivityResetsTheAwayTimer() {
+        List<Point> positions = new ArrayList<>();
+        positions.add(at(100, 100));                              // baseline
+        for (int i = 0; i < 29; i++) positions.add(at(100, 100)); // 29 still polls
+        positions.add(at(100, 100));                              // the user presses a key
+        for (int i = 0; i < LOOPS_BEFORE_AWAY; i++) positions.add(at(100, 100)); // then the mouse stays put
+
+        CursorMoveListener listener = scriptedListener(positions.toArray(Point[]::new));
+
+        listener.run(); // seed the baseline
+        for (int i = 0; i < 29; i++) listener.run(); // loops = 29
+        assertFalse(listener.isUserAway());
+
+        // the user is typing without moving the mouse: the timer resets
+        listener.reportKeyboardActivity();
+        listener.run();
+        assertFalse(listener.isUserAway());
+
+        // ...and it still takes 30 still polls to be away again
+        for (int i = 0; i < LOOPS_BEFORE_AWAY - 1; i++) listener.run(); // loops = 29
+        assertFalse(listener.isUserAway());
+
+        listener.run(); // loops = 30
+        assertTrue(listener.isUserAway());
+    }
+
+    @Test
+    void keyboardActivityBringsTheUserBackWhileAway() {
+        Point[] positions = new Point[LOOPS_BEFORE_AWAY + 3];
+        for (int i = 0; i < positions.length; i++) {
+            positions[i] = at(100, 100);
+        }
+        CursorMoveListener listener = scriptedListener(positions);
+
+        for (int i = 0; i <= LOOPS_BEFORE_AWAY; i++) { // baseline + 30 still polls
+            listener.run();
+        }
+        assertTrue(listener.isUserAway());
+
+        // the user comes back at the keyboard: the away state must end,
+        // even though the mouse never moved
+        listener.reportKeyboardActivity();
+        listener.run();
+        assertFalse(listener.isUserAway());
+    }
+
+    @Test
     void userComingBackIsDetectedWhileTheAppIsWiggling() {
         // the app keeps wiggling while the user is away; when the user comes
         // back and moves the mouse, the away state must end
