@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import wtf.beatrice.autosqueal.Main;
 import wtf.beatrice.autosqueal.config.AutoSquealConfig;
+import wtf.beatrice.autosqueal.config.ScreenArea;
 import wtf.beatrice.autosqueal.controls.CursorMover;
 import wtf.beatrice.autosqueal.controls.RobotMouseTracker;
 import wtf.beatrice.autosqueal.listener.CursorMoveListener;
@@ -22,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class MainWindow
 {
@@ -116,7 +118,9 @@ public class MainWindow
             addTrayIcon();
         }
 
-        startAutomation();
+        if (config.isStartAutomatically()) {
+            startAutomation();
+        }
         updateToggleLabel();
     }
 
@@ -321,10 +325,18 @@ public class MainWindow
         // the automation only moves the mouse when the user is away.
         periodicScheduler.scheduleWithFixedDelay(awayDetector, 0L, AWAY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
-        cursorMover = new CursorMover(movementExecutor, robotTracker, awayDetector::isUserAway);
+        // the movement bounds are read again at every movement, so a change
+        // of setting applies from the next movement without a restart. the
+        // corner click always aims at the main screen, whatever screens the
+        // cursor may otherwise travel to.
+        Supplier<Rectangle> movementBounds = () -> RunnerUtil.screenBounds(config.getMovementScreen());
+        Supplier<Rectangle> primaryScreenBounds = () -> RunnerUtil.screenBounds(ScreenArea.PRIMARY);
+
+        cursorMover = new CursorMover(movementExecutor, robotTracker, awayDetector::isUserAway,
+                config, movementBounds, primaryScreenBounds);
         periodicScheduler.scheduleWithFixedDelay(cursorMover,
                 AUTOMATION_START_DELAY_SECONDS,
-                RunnerUtil.SECONDS_BETWEEN_MOVES,
+                config.getMoveIntervalSeconds(),
                 TimeUnit.SECONDS);
     }
 

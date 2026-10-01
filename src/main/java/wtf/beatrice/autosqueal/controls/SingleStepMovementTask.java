@@ -25,33 +25,31 @@ public class SingleStepMovementTask implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger(SingleStepMovementTask.class);
 
-    /** Delay between two consecutive cursor steps, in milliseconds. */
-    private static final long STEP_DELAY_MILLISECONDS = 2L;
-
     private final RobotMouseTracker robotTracker;
-    private final Robot robot;
     private final int destX;
     private final int destY;
     private final boolean click;
     private final BooleanSupplier userIsAway;
+    private final long stepDelayMilliseconds;
 
     private float currentX;
     private float currentY;
     private float stepX;
     private float stepY;
 
-    public SingleStepMovementTask(RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click,
-                                  BooleanSupplier userIsAway) throws AWTException {
+    public SingleStepMovementTask(RobotMouseTracker robotTracker, int destinationX, int destinationY,
+                                  boolean click, BooleanSupplier userIsAway, long stepDelayMilliseconds,
+                                  Point start) {
 
         this.robotTracker = robotTracker;
         this.destX = destinationX;
         this.destY = destinationY;
         this.click = click;
         this.userIsAway = userIsAway;
+        this.stepDelayMilliseconds = stepDelayMilliseconds;
 
-        Point location = MouseInfo.getPointerInfo().getLocation();
-        this.currentX = location.x;
-        this.currentY = location.y;
+        this.currentX = start.x;
+        this.currentY = start.y;
 
         int lengthX = Math.round(Math.abs(currentX - destX));
         int lengthY = Math.round(Math.abs(currentY - destY));
@@ -61,12 +59,21 @@ public class SingleStepMovementTask implements Runnable {
 
         LOGGER.info("Dest: [{}, {}], Curr: [{}, {}]", destX, destY, currentX, currentY);
         LOGGER.info("Step: [{}, {}]", stepX, stepY);
-
-        this.robot = new Robot();
     }
 
     @Override
     public void run() {
+
+        // the robot is created here, not in the constructor: building a
+        // movement must never touch the system on its own, or there would be
+        // no way to queue one for testing or display without moving a mouse
+        Robot robot;
+        try {
+            robot = new Robot();
+        } catch (AWTException ex) {
+            LOGGER.error("Could not create a robot, skipping this movement", ex);
+            return;
+        }
 
         // any position change from here on is the app's doing
         robotTracker.moveStarted();
@@ -91,10 +98,10 @@ public class SingleStepMovementTask implements Runnable {
 
                 robot.mouseMove(Math.round(currentX), Math.round(currentY));
 
-                Thread.sleep(STEP_DELAY_MILLISECONDS);
+                Thread.sleep(stepDelayMilliseconds);
             }
 
-            onDestinationReached();
+            onDestinationReached(robot);
         } catch (InterruptedException ex) {
             // the movement was interrupted: the automation was stopped, so
             // just end the movement here
@@ -111,13 +118,13 @@ public class SingleStepMovementTask implements Runnable {
         return Math.round(currentX) == destX && Math.round(currentY) == destY;
     }
 
-    private void onDestinationReached() throws InterruptedException {
+    private void onDestinationReached(Robot robot) throws InterruptedException {
         LOGGER.info("Reached destination [{}, {}], stopping mover", destX, destY);
 
         robotTracker.moveEnded(destX, destY);
 
         if (click) {
-            performClickSequence();
+            performClickSequence(robot);
         }
     }
 
@@ -125,7 +132,7 @@ public class SingleStepMovementTask implements Runnable {
      * Performs a double click with the same pacing the app has always used:
      * press at +500ms, release at +700ms, press at +1200ms, release at +1400ms.
      */
-    private void performClickSequence() throws InterruptedException {
+    private void performClickSequence(Robot robot) throws InterruptedException {
         Thread.sleep(500L);
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
         Thread.sleep(200L);
@@ -182,5 +189,19 @@ public class SingleStepMovementTask implements Runnable {
             return current + step;
         }
         return current;
+    }
+
+    // package-private: read by the tests, and soon by the live status view
+
+    int getDestX() {
+        return destX;
+    }
+
+    int getDestY() {
+        return destY;
+    }
+
+    boolean isClick() {
+        return click;
     }
 }
