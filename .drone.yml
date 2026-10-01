@@ -14,19 +14,19 @@ steps:
   - name: build
     image: maven:3-eclipse-temurin-25
     commands:
-      - mvn verify --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+      - ./mvnw verify --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 
   # run unit tests
   - name: test
     image: maven:3-eclipse-temurin-25
     commands:
-      - mvn test --no-transfer-progress -B -V
+      - ./mvnw test --no-transfer-progress -B -V
 
   # run code analysis
   - name: code-analysis
     image: maven:3-eclipse-temurin-25
     commands:
-      - mvn sonar:sonar --no-transfer-progress -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.host.url=$SONAR_INSTANCE_URL -Dsonar.token=$SONAR_LOGIN_KEY -B -V
+      - ./mvnw sonar:sonar --no-transfer-progress -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.host.url=$SONAR_INSTANCE_URL -Dsonar.token=$SONAR_LOGIN_KEY -B -V
     environment:
       SONAR_PROJECT_KEY:
         from_secret: sonar_project_key
@@ -57,7 +57,7 @@ steps:
   - name: maven-deploy
     image: maven:3-eclipse-temurin-25
     commands:
-      - mvn deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=$MAVEN_REPO_USERNAME -Dmaven.repo.password=$MAVEN_REPO_PASSWORD
+      - ./mvnw deploy --no-transfer-progress -DskipTests=true -Dmaven.javadoc.skip=true -B -V -gs settings.xml -Dmaven.repo.username=$MAVEN_REPO_USERNAME -Dmaven.repo.password=$MAVEN_REPO_PASSWORD
     environment:
       MAVEN_REPO_USERNAME:
         from_secret: maven_repo_username
