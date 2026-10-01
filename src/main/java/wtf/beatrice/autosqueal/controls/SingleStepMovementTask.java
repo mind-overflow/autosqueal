@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.util.function.BooleanSupplier;
 
 /**
  * Moves the mouse cursor towards a destination one small step at a time.
@@ -12,6 +13,10 @@ import java.awt.event.InputEvent;
  * Runs on its own virtual thread: it mostly sleeps between steps, so blocking
  * it is free. When it gets to its destination, it can optionally perform a
  * double click, with the pacing the app has always used.
+ *
+ * If the user comes back mid-movement, the movement is abandoned at once —
+ * within the latency of the away detection, which polls about once a second —
+ * so the mouse is returned to the user instead of being dragged to a corner.
  *
  * All the movements it performs are reported to the {@link RobotMouseTracker},
  * so that the away detection can tell them apart from the user's.
@@ -28,18 +33,21 @@ public class SingleStepMovementTask implements Runnable {
     private final int destX;
     private final int destY;
     private final boolean click;
+    private final BooleanSupplier userIsAway;
 
     private float currentX;
     private float currentY;
     private float stepX;
     private float stepY;
 
-    public SingleStepMovementTask(RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click) throws AWTException {
+    public SingleStepMovementTask(RobotMouseTracker robotTracker, int destinationX, int destinationY, boolean click,
+                                  BooleanSupplier userIsAway) throws AWTException {
 
         this.robotTracker = robotTracker;
         this.destX = destinationX;
         this.destY = destinationY;
         this.click = click;
+        this.userIsAway = userIsAway;
 
         Point location = MouseInfo.getPointerInfo().getLocation();
         this.currentX = location.x;
@@ -65,6 +73,14 @@ public class SingleStepMovementTask implements Runnable {
 
         try {
             while (!hasReachedDestination()) {
+                // a user who came back mid-movement gets the mouse back
+                if (!userIsAway.getAsBoolean()) {
+                    LOGGER.info("User is back: abandoning the movement at [{}, {}]",
+                            Math.round(currentX), Math.round(currentY));
+                    robotTracker.moveEnded(Math.round(currentX), Math.round(currentY));
+                    return;
+                }
+
                 // when less than a full step is left, move exactly what is
                 // left, so that both axes always land on their destination
                 stepX = adjustedStep(currentX, destX, stepX);

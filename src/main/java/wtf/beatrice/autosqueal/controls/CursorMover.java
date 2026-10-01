@@ -17,6 +17,9 @@ import java.util.function.BooleanSupplier;
  *
  * The movements only happen when the user is away: while the user is actively
  * using the machine, they are skipped, so the app never fights for the mouse.
+ * The same goes for a movement already in progress: the task checks whether
+ * the user is still away at every step, and gives the mouse back when they
+ * are not.
  *
  * The movement itself is executed by a {@link SingleStepMovementTask}, which
  * runs on its own virtual thread until it reaches its destination.
@@ -72,7 +75,7 @@ public class CursorMover implements Runnable
         LOGGER.info("Destination coordinates: {}, {}", destX, destY);
 
         try {
-            SingleStepMovementTask movement = new SingleStepMovementTask(robotTracker, destX, destY, click);
+            SingleStepMovementTask movement = new SingleStepMovementTask(robotTracker, destX, destY, click, isUserAway);
             movementExecutor.execute(movement);
         } catch (AWTException ex) {
             LOGGER.error("Could not start movement task", ex);
