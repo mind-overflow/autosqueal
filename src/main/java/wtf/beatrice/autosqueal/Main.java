@@ -8,9 +8,10 @@ import wtf.beatrice.autosqueal.config.AutoSquealConfig;
 import wtf.beatrice.autosqueal.config.ConfigStore;
 import wtf.beatrice.autosqueal.listener.KeyPressListener;
 import wtf.beatrice.autosqueal.ui.MainWindow;
+import wtf.beatrice.autosqueal.ui.ThemeManager;
+import wtf.beatrice.autosqueal.util.SystemUtil;
 
 import javax.swing.*;
-import javax.swing.UnsupportedLookAndFeelException;
 
 public class Main {
 
@@ -24,14 +25,24 @@ public class Main {
     public static void main(String[] args) {
         LOGGER.info("Hello world!");
 
-        config = new ConfigStore().load();
-        mainWindow = new MainWindow(config);
+        // macos window chrome: these must be set before AWT initializes,
+        // or they are ignored
+        if (SystemUtil.getHostSystem() == SystemUtil.OperatingSystem.MAC_OS) {
+            // follow the system appearance for the window title bars
+            System.setProperty("apple.awt.application.appearance", "system");
+            // name the app in the menu bar
+            System.setProperty("apple.awt.application.name", "autosqueal");
+        }
+
+        ConfigStore configStore = new ConfigStore();
+        config = configStore.load();
+        mainWindow = new MainWindow(config, configStore);
 
         // ⌘Q on macOS, the IDE stop button and signals all bypass
         // windowClosing: make cleanup run on every exit path instead
         Runtime.getRuntime().addShutdownHook(new Thread(mainWindow::cleanup, "autosqueal-shutdown"));
 
-        useSystemLookAndFeel();
+        ThemeManager.applySystemTheme();
         boolean hookRegistered = registerJNativeHook();
 
         // all Swing components must be created and updated on the EDT
@@ -41,14 +52,6 @@ public class Main {
                 mainWindow.showPermissionsHelp();
             }
         });
-    }
-
-    private static void useSystemLookAndFeel() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ex) {
-            LOGGER.warn("Could not set the system look and feel, using the default one", ex);
-        }
     }
 
     public static boolean registerJNativeHook() {

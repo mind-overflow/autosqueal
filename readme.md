@@ -28,7 +28,7 @@
  1. clone the official repository linked below using `git clone`.  
  2. `cd` into the directory and run `mvn clean package`.  
  3. you will find a runnable jar with dependencies in the `target/` folder.  
- 4. run the built jar file with `java -jar target/autosqueal-*-jar-with-dependencies.jar`.
+ 4. run the built jar file with `java -jar target/autosqueal-*.jar`.
 
 **macos .app bundle**  
  - on macos, run `mvn clean package -Pmac-app`: you will find `autosqueal.app` in `target/jpackage/`.  

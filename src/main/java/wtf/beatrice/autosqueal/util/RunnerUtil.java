@@ -10,9 +10,6 @@ public class RunnerUtil {
         throw new AssertionError("The RunnerUtil class is not intended to be instantiated.");
     }
 
-    public static final int SCREEN_HEIGHT = Toolkit.getDefaultToolkit().getScreenSize().height;
-    public static final int SCREEN_WIDTH = Toolkit.getDefaultToolkit().getScreenSize().width;
-
     /**
      * The bounds of the screens the cursor may travel to, according to the
      * given setting. Fetched on every call, so that a change of setting, or
