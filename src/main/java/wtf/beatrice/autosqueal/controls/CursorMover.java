@@ -32,6 +32,20 @@ public class CursorMover implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger(CursorMover.class);
 
+    /**
+     * Notified of the automation's own timing, for the live status view.
+     * Called on the scheduler thread: implementations marshal to their
+     * own thread.
+     */
+    public interface Listener {
+
+        /** Called at every scheduled tick of the movement cadence. */
+        default void onTick() { }
+
+        /** Called when a movement was actually queued for execution. */
+        default void onMovementQueued(int destX, int destY, boolean click) { }
+    }
+
     /** Distance from the screen edge, so the corner click lands inside the screen. */
     private static final int CORNER_OFFSET_PIXELS = 5;
 
@@ -43,9 +57,15 @@ public class CursorMover implements Runnable {
     private final Supplier<Rectangle> movementBounds;
     private final Supplier<Rectangle> primaryScreenBounds;
     private final Supplier<Point> currentPosition;
+    private volatile Listener listener;
 
     /** Movements started since the last corner click. */
     private int iteration = 0;
+
+    /** Sets the listener notified of ticks and queued movements. */
+    public void setListener(Listener listener) {
+        this.listener = listener;
+    }
 
     public CursorMover(ExecutorService movementExecutor, RobotMouseTracker robotTracker,
                        BooleanSupplier isUserAway, AutoSquealConfig config,
@@ -70,6 +90,10 @@ public class CursorMover implements Runnable {
 
     @Override
     public void run() {
+
+        if (listener != null) {
+            listener.onTick();
+        }
 
         if (!isUserAway.getAsBoolean()) {
             LOGGER.debug("User is present, skipping movement");
@@ -108,6 +132,9 @@ public class CursorMover implements Runnable {
                     robotTracker, destX, destY, click, isUserAway,
                     config.getStepDelayMilliseconds(), location);
             movementExecutor.execute(movement);
+            if (listener != null) {
+                listener.onMovementQueued(destX, destY, click);
+            }
         } catch (RejectedExecutionException ex) {
             LOGGER.debug("Movement not started: automation is shutting down");
         }
